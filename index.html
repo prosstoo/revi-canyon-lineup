@@ -9,11 +9,21 @@
       content="Планировщик расстановки REVI по трём линиям ивента «Завоевание каньона»"
     />
     <title>REVI · Завоевание каньона</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('canyon-theme');
+          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="./assets/index-Dc5BOq0W.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-dBaMd3g9.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="./assets/index-llnO98va.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CMpUndL1.css">
   </head>
   <body>
     <div id="root"></div>
