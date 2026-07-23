@@ -597,7 +597,7 @@ textarea {
   inset: 0;
   background:
     linear-gradient(180deg, rgba(11, 21, 32, 0.35) 0%, rgba(11, 21, 32, 0.72) 100%),
-    url('./canyon-hero.png') center / cover no-repeat;
+    url('./assets/canyon-hero.png') center / cover no-repeat;
   opacity: 0.9;
   pointer-events: none;
 }
@@ -605,7 +605,7 @@ textarea {
 [data-theme='light'] .arena-banner__art {
   background:
     linear-gradient(180deg, rgba(229, 240, 250, 0.55) 0%, rgba(255, 255, 255, 0.82) 100%),
-    url('./canyon-hero.png') center / cover no-repeat;
+    url('./assets/canyon-hero.png') center / cover no-repeat;
   opacity: 1;
   filter: saturate(0.85) brightness(1.05);
 }
@@ -653,7 +653,7 @@ textarea {
   border-radius: 50%;
   margin-right: 0.4rem;
   vertical-align: middle;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: none;
 }
 
 .lane-mark--left {
@@ -720,6 +720,19 @@ textarea {
   min-height: 54px;
 }
 
+
+.arena-banner .vs-side {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.arena-banner .vs-side--ally {
+  background: color-mix(in srgb, var(--ally-soft) 50%, var(--surface));
+}
+
+.arena-banner .vs-side--enemy {
+  background: color-mix(in srgb, var(--enemy-soft) 50%, var(--surface));
+}
 .vs-side--ally {
   background: var(--ally-soft);
   border-color: color-mix(in srgb, var(--ally) 40%, var(--border));
