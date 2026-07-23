@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { AlliancePanel } from './components/AlliancePanel'
-import { JoustAnimation } from './components/JoustAnimation'
 import { MatchupLineups } from './components/MatchupLineups'
 import { SimResults } from './components/SimResults'
 import { StrategyPanel } from './components/StrategyPanel'
@@ -328,11 +327,8 @@ export default function App() {
                     <strong>#{ourName}</strong>
                   </div>
                 </div>
-                <div className="vs-center">
-                  <JoustAnimation size="md" />
-                  <div className="vs-badge" aria-hidden>
-                    Vs
-                  </div>
+                <div className="vs-badge" aria-hidden>
+                  Vs
                 </div>
                 <div className="vs-side vs-side--enemy">
                   <div>
@@ -409,18 +405,11 @@ PlayerThree,15000000,right`}</pre>
                   <span className="muted">Сейчас (топ-15)</span>
                   <strong>{outcomeLabel(resultBefore)}</strong>
                 </div>
-                <div className="score-bar__after">
-                  <JoustAnimation
-                    size="sm"
-                    impact={result?.outcome === 'win'}
-                    className="score-bar__joust"
-                  />
-                  <div>
-                    <span className="muted">После оптимизации</span>
-                    <strong className={result?.outcome === 'win' ? 'ok' : ''}>
-                      {outcomeLabel(result)}
-                    </strong>
-                  </div>
+                <div>
+                  <span className="muted">После оптимизации</span>
+                  <strong className={result?.outcome === 'win' ? 'ok' : ''}>
+                    {outcomeLabel(result)}
+                  </strong>
                 </div>
               </div>
               {noPerfectNote && <div className="toast-note toast-note--warn">{noPerfectNote}</div>}

@@ -7,7 +7,6 @@ import {
 } from '../lib/simulate'
 import type { LaneAssignment, LaneId, MatchSimResult, Player } from '../types'
 import { FACING_LANE, LANE_IDS, LANE_LABELS } from '../types'
-import { CrossedSwords } from './JoustAnimation'
 
 interface Props {
   title: string
@@ -71,7 +70,7 @@ export function MatchupLineups({
               <div key={ourLane} className="matchup-pair">
                 <div className="matchup-pair-label">
                   <span>
-                    <CrossedSwords /> {LANE_LABELS[ourLane]} vs {LANE_LABELS[theirLane]}
+                    {LANE_LABELS[ourLane]} vs {LANE_LABELS[theirLane]}
                   </span>
                   {laneResult && (
                     <span
@@ -178,64 +177,62 @@ function LaneMiniTable({
           {formatPower(lanePower(players))}
         </span>
       </div>
-      <div className="matchup-table-wrap matchup-table-wrap--full">
-        <table>
-          <thead>
-            <tr>
-              <th className="col-ord">Ход</th>
-              <th>Ник</th>
-              <th className="col-pow">Мощь</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((p, i) => (
-              <tr
-                key={p.id}
-                draggable={canDrag}
-                onDragStart={
-                  canDrag
-                    ? (e) => {
-                        e.dataTransfer.setData('text/player-id', p.id)
-                        e.dataTransfer.setData('text/from', lane)
+      <table className="matchup-table">
+        <thead>
+          <tr>
+            <th className="col-ord">Ход</th>
+            <th>Ник</th>
+            <th className="col-pow">Мощь</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((p, i) => (
+            <tr
+              key={p.id}
+              draggable={canDrag}
+              onDragStart={
+                canDrag
+                  ? (e) => {
+                      e.dataTransfer.setData('text/player-id', p.id)
+                      e.dataTransfer.setData('text/from', lane)
+                    }
+                  : undefined
+              }
+            >
+              <td className="col-ord">{turnOrderNumber(i, sorted.length)}</td>
+              <td className="col-nick">{p.nick}</td>
+              <td className="col-pow">
+                {onEditPower && editable ? (
+                  <input
+                    className="power-input power-input--row"
+                    type="text"
+                    inputMode="numeric"
+                    defaultValue={String(p.power)}
+                    key={`${p.id}-${p.power}`}
+                    onBlur={(e) => {
+                      const n = Number(e.target.value.replace(/[\s\u00a0,]/g, ''))
+                      if (Number.isFinite(n) && n > 0 && n !== p.power) {
+                        onEditPower(p.id, Math.round(n))
+                      } else {
+                        e.target.value = String(p.power)
                       }
-                    : undefined
-                }
-              >
-                <td className="col-ord">{turnOrderNumber(i, sorted.length)}</td>
-                <td className="col-nick">{p.nick}</td>
-                <td className="col-pow">
-                  {onEditPower && editable ? (
-                    <input
-                      className="power-input"
-                      type="text"
-                      inputMode="numeric"
-                      defaultValue={String(p.power)}
-                      key={`${p.id}-${p.power}`}
-                      onBlur={(e) => {
-                        const n = Number(e.target.value.replace(/[\s\u00a0,]/g, ''))
-                        if (Number.isFinite(n) && n > 0 && n !== p.power) {
-                          onEditPower(p.id, Math.round(n))
-                        } else {
-                          e.target.value = String(p.power)
-                        }
-                      }}
-                    />
-                  ) : (
-                    formatPower(p.power)
-                  )}
-                </td>
-              </tr>
-            ))}
-            {sorted.length === 0 && (
-              <tr>
-                <td colSpan={3} className="muted">
-                  Пусто
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                    }}
+                  />
+                ) : (
+                  <span className="power-text">{formatPower(p.power)}</span>
+                )}
+              </td>
+            </tr>
+          ))}
+          {sorted.length === 0 && (
+            <tr>
+              <td colSpan={3} className="muted">
+                Пусто
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   )
 }
