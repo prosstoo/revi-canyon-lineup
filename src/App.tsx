@@ -11,7 +11,7 @@ import {
   makeReviCurrentAssignment,
   makeReviRoster,
 } from './lib/sampleData'
-import { emptyLanes, simulateMatch } from './lib/simulate'
+import { emptyLanes, lanePower, simulateMatch } from './lib/simulate'
 import { applyStrategy } from './lib/strategies'
 import type {
   BattleSettings,
@@ -21,11 +21,16 @@ import type {
   Player,
   StrategyId,
 } from './types'
-import { DEFAULT_SETTINGS, LANE_IDS } from './types'
+import { DEFAULT_SETTINGS, LANE_IDS, LANE_LABELS } from './types'
 import './App.css'
 
 function flatFromAssignment(a: LaneAssignment): Player[] {
   return LANE_IDS.flatMap((l) => a[l])
+}
+
+function formatMillions(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 100_000_000 ? 0 : 1)}M`
+  return n.toLocaleString('ru-RU')
 }
 
 function updatePowerInLanes(
@@ -167,18 +172,74 @@ export default function App() {
     <div className="app-shell app-shell--single">
       <main className="app-main">
         <div className="app">
-          <header className="page-header">
-            <div>
-              <p className="eyebrow">REVI vs BDSM · Завоевание каньона</p>
-              <h1>Расстановка по линиям</h1>
-              <p className="lead">
-                Наша правая линия бьётся с их левой (и наоборот). Цель — больше флагов.
-              </p>
-            </div>
+          <div className="game-topbar">
+            <h1>Завоевание каньона</h1>
             <button type="button" className="btn btn-primary" onClick={loadDemo}>
               Демо REVI vs BDSM
             </button>
-          </header>
+          </div>
+
+          <div className="game-phases">
+            <span className="phase-pill">Регистрация</span>
+            <span className="phase-pill">Группировка</span>
+            <span className="phase-pill is-active">Фаза сражения</span>
+            <span className="phase-pill">Награды</span>
+          </div>
+
+          <section className="arena-banner">
+            <div className="vs-row">
+              <div className="vs-side vs-side--ally">
+                <div>
+                  <span>наш альянс</span>
+                  <strong>#REVI</strong>
+                </div>
+              </div>
+              <div className="vs-badge" aria-hidden>
+                Vs
+              </div>
+              <div className="vs-side vs-side--enemy">
+                <div>
+                  <span>противник</span>
+                  <strong>#BDSM</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="lane-summary">
+              {LANE_IDS.map((lane, idx) => {
+                const ours = assignment[lane] ?? []
+                const theirs = enemy[lane] ?? []
+                const ourP = lanePower(ours)
+                const theirP = lanePower(theirs)
+                const sim = result?.lanes[lane]
+                const score =
+                  sim != null
+                    ? `${sim.winner === 'us' ? 'W' : sim.winner === 'them' ? 'L' : 'D'} · ${ours.length}:${theirs.length}`
+                    : `${ours.length}:${theirs.length}`
+                return (
+                  <div
+                    key={lane}
+                    className={`lane-card ${idx === 2 ? 'is-hot' : ''}`}
+                  >
+                    <h3>
+                      <span className="dot" />
+                      {LANE_LABELS[lane]}
+                    </h3>
+                    <div className="meta-line">
+                      <span>Участники</span>
+                      <b>{score}</b>
+                    </div>
+                    <div className="meta-line">
+                      <span>Мощь</span>
+                      <b>
+                        {formatMillions(ourP)} / {formatMillions(theirP)}
+                      </b>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
 
           {demoNote && <div className="toast-note">{demoNote}</div>}
 
