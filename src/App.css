@@ -854,6 +854,13 @@ textarea {
   font-size: 1rem;
 }
 
+.vs-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .vs-badge {
   width: 52px;
   height: 52px;
@@ -865,6 +872,259 @@ textarea {
   background: radial-gradient(circle at 35% 30%, #ffe08a, var(--gold));
   border: 2px solid #fff4c8;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.score-bar__after {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.score-bar__joust {
+  align-self: center;
+}
+
+.calc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.calc-row__btns {
+  margin-bottom: 0;
+}
+
+.panel-head-with-joust {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.panel-head-with-joust h2 {
+  margin: 0;
+}
+
+/* --- Турнирные анимации --- */
+.joust {
+  display: block;
+  line-height: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.joust--sm {
+  width: 120px;
+}
+
+.joust--md {
+  width: 180px;
+}
+
+.joust--lg {
+  width: 240px;
+}
+
+.joust__svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.joust__fill-ally {
+  fill: var(--ally);
+}
+
+.joust__fill-enemy {
+  fill: var(--enemy);
+}
+
+.joust__stroke-ally {
+  stroke: var(--ally-bright);
+}
+
+.joust__stroke-enemy {
+  stroke: var(--enemy-bright);
+}
+
+.joust__shield-ally {
+  fill: color-mix(in srgb, var(--ally) 70%, #fff);
+  stroke: var(--ally-bright);
+  stroke-width: 1;
+}
+
+.joust__shield-enemy {
+  fill: color-mix(in srgb, var(--enemy) 70%, #fff);
+  stroke: var(--enemy-bright);
+  stroke-width: 1;
+}
+
+.joust__ground {
+  stroke: var(--muted);
+}
+
+.joust__rider--left {
+  transform-origin: 48px 40px;
+  animation: joust-charge-left 2.8s ease-in-out infinite;
+}
+
+.joust__rider--right {
+  transform-origin: 152px 40px;
+  animation: joust-charge-right 2.8s ease-in-out infinite;
+}
+
+.joust__horse-body {
+  animation: joust-gallop 0.35s ease-in-out infinite alternate;
+}
+
+.joust__spark {
+  opacity: 0;
+  transform-origin: 100px 28px;
+  animation: joust-spark 2.8s ease-in-out infinite;
+}
+
+.joust__spark-core {
+  fill: var(--gold);
+}
+
+.joust__spark-rays {
+  stroke: var(--gold);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.joust--impact .joust__rider--left {
+  animation-duration: 2.2s;
+}
+
+.joust--impact .joust__rider--right {
+  animation-duration: 2.2s;
+}
+
+.joust--impact .joust__spark {
+  animation-duration: 2.2s;
+}
+
+@keyframes joust-charge-left {
+  0%,
+  12% {
+    transform: translateX(-18px);
+  }
+  42% {
+    transform: translateX(10px);
+  }
+  48%,
+  55% {
+    transform: translateX(8px);
+  }
+  100% {
+    transform: translateX(-18px);
+  }
+}
+
+@keyframes joust-charge-right {
+  0%,
+  12% {
+    transform: translateX(18px);
+  }
+  42% {
+    transform: translateX(-10px);
+  }
+  48%,
+  55% {
+    transform: translateX(-8px);
+  }
+  100% {
+    transform: translateX(18px);
+  }
+}
+
+@keyframes joust-gallop {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-1.5px);
+  }
+}
+
+@keyframes joust-spark {
+  0%,
+  40% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  55% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  65%,
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+.crossed-swords {
+  display: inline-flex;
+  vertical-align: -3px;
+  margin-right: 0.25rem;
+  color: var(--gold);
+}
+
+.crossed-swords__a,
+.crossed-swords__b {
+  transform-origin: 12px 12px;
+  animation: swords-clash 2.4s ease-in-out infinite;
+}
+
+.crossed-swords__b {
+  animation-delay: 0.05s;
+}
+
+@keyframes swords-clash {
+  0%,
+  55%,
+  100% {
+    transform: rotate(0deg);
+  }
+  60% {
+    transform: rotate(-8deg);
+  }
+  68% {
+    transform: rotate(6deg);
+  }
+  76% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joust__rider--left,
+  .joust__rider--right,
+  .joust__horse-body,
+  .joust__spark,
+  .crossed-swords__a,
+  .crossed-swords__b {
+    animation: none !important;
+  }
+
+  .joust__rider--left {
+    transform: translateX(0);
+  }
+
+  .joust__rider--right {
+    transform: translateX(0);
+  }
+
+  .joust__spark {
+    opacity: 0.55;
+  }
 }
 
 .score-bar {

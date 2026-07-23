@@ -1,5 +1,6 @@
 import type { StrategyId } from '../types'
 import { STRATEGY_META } from '../types'
+import { JoustAnimation } from './JoustAnimation'
 
 interface Props {
   strategy: StrategyId
@@ -40,13 +41,16 @@ export function StrategyPanel({
         ))}
       </div>
 
-      <div className="upload-row">
-        <button type="button" className="btn btn-primary" onClick={onApply} disabled={busy}>
-          Рассчитать расстановку
-        </button>
-        <button type="button" className="btn btn-secondary" onClick={onExport}>
-          Экспорт CSV
-        </button>
+      <div className="calc-row">
+        <JoustAnimation size="sm" className="calc-row__joust" />
+        <div className="upload-row calc-row__btns">
+          <button type="button" className="btn btn-primary" onClick={onApply} disabled={busy}>
+            Рассчитать расстановку
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={onExport}>
+            Экспорт CSV
+          </button>
+        </div>
       </div>
     </section>
   )

@@ -1,6 +1,7 @@
 import { formatPower } from '../lib/parseRoster'
 import type { MatchSimResult } from '../types'
 import { FACING_LANE, LANE_IDS, LANE_LABELS } from '../types'
+import { CrossedSwords, JoustAnimation } from './JoustAnimation'
 
 interface Props {
   result: MatchSimResult | null
@@ -36,7 +37,10 @@ export function SimResults({
   return (
     <section className="panel">
       <header className="panel__head">
-        <h2>{title}</h2>
+        <div className="panel-head-with-joust">
+          <JoustAnimation size="sm" impact={result.outcome === 'win'} />
+          <h2>{title}</h2>
+        </div>
         <span
           className={`tag ${
             result.outcome === 'win'
@@ -63,7 +67,7 @@ export function SimResults({
           return (
             <div key={lane} className={`sim-lane sim-lane--${r.winner}`}>
               <h3>
-                Наша {LANE_LABELS[lane].toLowerCase()} vs их{' '}
+                <CrossedSwords /> Наша {LANE_LABELS[lane].toLowerCase()} vs их{' '}
                 {LANE_LABELS[facing].toLowerCase()} — {w}
               </h3>
               <p className="meta">

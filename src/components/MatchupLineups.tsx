@@ -7,6 +7,7 @@ import {
 } from '../lib/simulate'
 import type { LaneAssignment, LaneId, MatchSimResult, Player } from '../types'
 import { FACING_LANE, LANE_IDS, LANE_LABELS } from '../types'
+import { CrossedSwords } from './JoustAnimation'
 
 interface Props {
   title: string
@@ -70,7 +71,7 @@ export function MatchupLineups({
               <div key={ourLane} className="matchup-pair">
                 <div className="matchup-pair-label">
                   <span>
-                    {LANE_LABELS[ourLane]} vs {LANE_LABELS[theirLane]}
+                    <CrossedSwords /> {LANE_LABELS[ourLane]} vs {LANE_LABELS[theirLane]}
                   </span>
                   {laneResult && (
                     <span
