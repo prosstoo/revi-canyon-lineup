@@ -5,9 +5,16 @@ import { FACING_LANE, LANE_IDS, LANE_LABELS } from '../types'
 interface Props {
   result: MatchSimResult | null
   title?: string
+  ourLabel?: string
+  theirLabel?: string
 }
 
-export function SimResults({ result, title = 'Прогноз боёв' }: Props) {
+export function SimResults({
+  result,
+  title = 'Прогноз боёв',
+  ourLabel = 'REVI',
+  theirLabel = 'BDSM',
+}: Props) {
   if (!result) {
     return (
       <section className="panel">
@@ -21,7 +28,7 @@ export function SimResults({ result, title = 'Прогноз боёв' }: Props)
 
   const outcomeLabel =
     result.outcome === 'win'
-      ? 'Победа REVI'
+      ? `Победа ${ourLabel}`
       : result.outcome === 'lose'
         ? 'Поражение'
         : 'Ничья'
@@ -48,7 +55,11 @@ export function SimResults({ result, title = 'Прогноз боёв' }: Props)
           const r = result.lanes[lane]
           const facing = r.facingLane ?? FACING_LANE[lane]
           const w =
-            r.winner === 'us' ? 'REVI' : r.winner === 'them' ? 'BDSM' : 'ничья'
+            r.winner === 'us'
+              ? ourLabel
+              : r.winner === 'them'
+                ? theirLabel
+                : 'ничья'
           return (
             <div key={lane} className={`sim-lane sim-lane--${r.winner}`}>
               <h3>
@@ -63,10 +74,10 @@ export function SimResults({ result, title = 'Прогноз боёв' }: Props)
                 <table>
                   <thead>
                     <tr>
-                      <th>REVI</th>
+                      <th>{ourLabel}</th>
                       <th>Мощь</th>
                       <th></th>
-                      <th>BDSM</th>
+                      <th>{theirLabel}</th>
                       <th>Мощь</th>
                       <th>Остаток</th>
                     </tr>

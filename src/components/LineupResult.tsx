@@ -173,20 +173,25 @@ function LaneTable({
 
 interface EnemyProps {
   enemy: LaneAssignment
+  allianceName?: string
   onEditPower?: (lane: LaneId, playerId: string, power: number) => void
 }
 
-export function EnemyLineupView({ enemy, onEditPower }: EnemyProps) {
+export function EnemyLineupView({
+  enemy,
+  allianceName = 'BDSM',
+  onEditPower,
+}: EnemyProps) {
   return (
-    <section className="panel" id="enemy-view">
+    <section className="panel" id="enemy-view-inner">
       <div className="panel-head">
         <div>
-          <h2>Состав линий соперника</h2>
+          <h2>Состав линий {allianceName}</h2>
           <p className="muted small">
-            Их левая стоит напротив нашей правой; их правая — напротив нашей левой.
+            Их левая напротив нашей правой; их правая — напротив нашей левой.
           </p>
         </div>
-        <span className="badge badge-warn">BDSM</span>
+        <span className="badge badge-warn">{allianceName}</span>
       </div>
       <div className="result-lanes">
         {LANE_IDS.map((lane) => {

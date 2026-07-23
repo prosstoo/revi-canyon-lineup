@@ -11,30 +11,29 @@ import type { LaneAssignment, LaneId, Player } from '../types'
 import { LANE_IDS, LANE_LABELS } from '../types'
 
 interface Props {
-  title: string
-  allianceTag: string
-  variant: 'ally' | 'enemy'
+  name: string
+  onNameChange: (name: string) => void
   lanes: LaneAssignment
   onChange: (lanes: LaneAssignment) => void
-  /** Можно держать больше 15 — в бой идут топ-15 по мощи */
-  allowOverflow?: boolean
   maxFight?: number
+  accent: 'ally' | 'enemy'
 }
 
+/** Одинаковая панель для обоих альянсов */
 export function AlliancePanel({
-  title,
-  allianceTag,
-  variant,
+  name,
+  onNameChange,
   lanes,
   onChange,
-  allowOverflow = true,
   maxFight = 15,
+  accent,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [lane, setLane] = useState<LaneId>('left')
   const [nick, setNick] = useState('')
   const [power, setPower] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [showAdd, setShowAdd] = useState(false)
 
   async function onFile(file: File | null) {
     if (!file) return
@@ -42,13 +41,10 @@ export function AlliancePanel({
     try {
       const parsed = await parseOpponentFile(file)
       const next = emptyLanes()
-      for (const l of LANE_IDS) {
-        next[l] = parsed[l] ?? []
-      }
-      // файл без столбца lane → всё в left; пользователь разнесёт
+      for (const l of LANE_IDS) next[l] = parsed[l] ?? []
       onChange(next)
     } catch {
-      setError('Не удалось прочитать файл. Нужны столбцы ник, мощь (и желательно lane).')
+      setError('Не удалось прочитать файл. Нужны столбцы ник, мощь, lane.')
     }
   }
 
@@ -96,12 +92,17 @@ export function AlliancePanel({
   )
 
   return (
-    <section className={`panel panel-equal alliance-panel alliance-panel--${variant}`}>
-      <header className="panel__head">
-        <h2>{title}</h2>
-        <span className={`tag ${variant === 'enemy' ? 'tag--enemy' : 'badge-ok'}`}>
-          {allianceTag}
-        </span>
+    <section className={`panel panel-equal alliance-panel alliance-panel--${accent}`}>
+      <header className="panel__head alliance-head">
+        <label className="alliance-name-field">
+          <span className="muted small">Название альянса</span>
+          <input
+            className="alliance-name-input"
+            value={name}
+            onChange={(e) => onNameChange(e.target.value)}
+            aria-label="Название альянса"
+          />
+        </label>
       </header>
 
       <div className="upload-row">
@@ -118,48 +119,58 @@ export function AlliancePanel({
         <button
           type="button"
           className="btn btn--ghost"
+          onClick={() => setShowAdd((v) => !v)}
+        >
+          {showAdd ? 'Скрыть добавление' : 'Добавить игрока'}
+        </button>
+        <button
+          type="button"
+          className="btn btn--ghost"
           onClick={() => onChange(emptyLanes())}
         >
           Очистить
         </button>
       </div>
 
-      <div className="manual-add">
-        <select value={lane} onChange={(e) => setLane(e.target.value as LaneId)}>
-          {LANE_IDS.map((l) => (
-            <option key={l} value={l}>
-              {LANE_LABELS[l]}
-            </option>
-          ))}
-        </select>
-        <input placeholder="Ник" value={nick} onChange={(e) => setNick(e.target.value)} />
-        <input placeholder="Мощь" value={power} onChange={(e) => setPower(e.target.value)} />
-        <button type="button" className="btn btn-secondary" onClick={addManual}>
-          Добавить
-        </button>
-      </div>
+      {showAdd && (
+        <div className="manual-add">
+          <select value={lane} onChange={(e) => setLane(e.target.value as LaneId)}>
+            {LANE_IDS.map((l) => (
+              <option key={l} value={l}>
+                {LANE_LABELS[l]}
+              </option>
+            ))}
+          </select>
+          <input
+            placeholder="Ник"
+            value={nick}
+            onChange={(e) => setNick(e.target.value)}
+          />
+          <input
+            placeholder="Мощь"
+            value={power}
+            onChange={(e) => setPower(e.target.value)}
+          />
+          <button type="button" className="btn btn-secondary" onClick={addManual}>
+            Добавить
+          </button>
+        </div>
+      )}
 
       {error && <p className="error">{error}</p>}
 
       <p className="meta">
-        Всего: <strong>{total}</strong>
-        {allowOverflow && (
-          <>
-            {' '}
-            · в бою (топ-{maxFight}/линия): <strong>{fightTotal}</strong>
-          </>
-        )}
+        Всего: <strong>{total}</strong> · в бою (топ-{maxFight}/линия):{' '}
+        <strong>{fightTotal}</strong>
       </p>
 
-      <div className="enemy-lanes">
+      <div className="lane-editors">
         {LANE_IDS.map((l) => (
           <LaneEditor
             key={l}
             lane={l}
             players={lanes[l]}
             maxFight={maxFight}
-            allowOverflow={allowOverflow}
-            variant={variant}
             onClear={() => onChange({ ...lanes, [l]: [] })}
             onRemove={(id) => removePlayer(l, id)}
             onEditPower={(id, pow) => updatePower(l, id, pow)}
@@ -175,8 +186,6 @@ function LaneEditor({
   lane,
   players,
   maxFight,
-  allowOverflow,
-  variant,
   onClear,
   onRemove,
   onEditPower,
@@ -185,20 +194,19 @@ function LaneEditor({
   lane: LaneId
   players: Player[]
   maxFight: number
-  allowOverflow: boolean
-  variant: 'ally' | 'enemy'
   onClear: () => void
   onRemove: (id: string) => void
   onEditPower: (id: string, power: number) => void
   onMoveTo: (id: string, to: LaneId) => void
 }) {
   const sorted = sortForDisplay(players)
-  const fightingIds = new Set(topFighters(players, maxFight).map((p) => p.id))
-  const overflow = allowOverflow && players.length > maxFight
+  const fighters = sortForDisplay(topFighters(players, maxFight))
+  const fightingIds = new Set(fighters.map((p) => p.id))
+  const overflow = players.length > maxFight
 
   return (
     <div
-      className={`enemy-lane ${variant === 'enemy' ? 'enemy-lane--foe' : 'enemy-lane--ally'}`}
+      className="lane-editor"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault()
@@ -207,11 +215,12 @@ function LaneEditor({
         if (id && from && from !== lane) onMoveTo(id, lane)
       }}
     >
-      <div className="enemy-lane__head">
+      <div className="lane-editor__head">
         <h3>{LANE_LABELS[lane]}</h3>
         <span>
           {players.length}
-          {overflow ? ` (бой: ${maxFight})` : ''} · {formatPower(lanePower(topFighters(players, maxFight)))}
+          {overflow ? ` (бой: ${maxFight})` : ''} ·{' '}
+          {formatPower(lanePower(fighters))}
         </span>
         <button type="button" className="btn btn--tiny" onClick={onClear}>
           очистить
@@ -220,6 +229,7 @@ function LaneEditor({
       <ul>
         {sorted.map((p) => {
           const inFight = fightingIds.has(p.id)
+          const idx = fighters.findIndex((x) => x.id === p.id)
           return (
             <li
               key={p.id}
@@ -229,15 +239,9 @@ function LaneEditor({
                 e.dataTransfer.setData('text/player-id', p.id)
                 e.dataTransfer.setData('text/from', lane)
               }}
-              title={inFight ? 'В бою' : `Вне топ-${maxFight} — не участвует в бою`}
             >
               <span className="ord">
-                {(() => {
-                  if (!inFight) return '—'
-                  const fighters = sortForDisplay(topFighters(players, maxFight))
-                  const idx = fighters.findIndex((x) => x.id === p.id)
-                  return turnOrderNumber(idx, fighters.length)
-                })()}
+                {inFight ? turnOrderNumber(idx, fighters.length) : '—'}
               </span>
               <span className="nick">{p.nick}</span>
               <input
@@ -259,7 +263,7 @@ function LaneEditor({
                 className="lane-move"
                 value={lane}
                 onChange={(e) => onMoveTo(p.id, e.target.value as LaneId)}
-                title="Перенести на линию"
+                title="Линия"
               >
                 {LANE_IDS.map((x) => (
                   <option key={x} value={x}>
@@ -276,7 +280,7 @@ function LaneEditor({
       </ul>
       {overflow && (
         <p className="hint tiny">
-          Серым — запас: в бой идут только {maxFight} самых сильных на линии.
+          Серым — запас: в бой идут только {maxFight} самых сильных.
         </p>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AlliancePanel } from './components/AlliancePanel'
 import { EnemyLineupView, LineupResult } from './components/LineupResult'
 import { SimResults } from './components/SimResults'
@@ -13,7 +13,6 @@ import {
   emptyLanes,
   fightingLanes,
   flatPlayers,
-  lanePower,
   simulateMatch,
 } from './lib/simulate'
 import { applyStrategy } from './lib/strategies'
@@ -24,15 +23,23 @@ import type {
   MatchSimResult,
   StrategyId,
 } from './types'
-import { DEFAULT_SETTINGS, LANE_IDS, LANE_LABELS } from './types'
+import { DEFAULT_SETTINGS, LANE_IDS } from './types'
 import './App.css'
 
 const THEME_KEY = 'canyon-theme'
 
-function formatMillions(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 100_000_000 ? 0 : 1)}M`
-  return n.toLocaleString('ru-RU')
-}
+const NAV = [
+  { id: 'rules', label: 'Правила' },
+  { id: 'vs', label: 'Vs' },
+  { id: 'format', label: 'Формат CSV' },
+  { id: 'alliances', label: 'Составы' },
+  { id: 'strategy', label: 'Стратегия' },
+  { id: 'score', label: 'Прогноз' },
+  { id: 'enemy-view', label: 'Линии врага' },
+  { id: 'recommended', label: 'Рекомендация' },
+  { id: 'uploaded', label: 'Загружено' },
+  { id: 'battles', label: 'Бои' },
+] as const
 
 function updatePowerInLanes(
   lanes: LaneAssignment,
@@ -48,7 +55,13 @@ function updatePowerInLanes(
   return next
 }
 
+function scrollToId(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 export default function App() {
+  const [ourName, setOurName] = useState('REVI')
+  const [enemyName, setEnemyName] = useState('BDSM')
   const [revi, setRevi] = useState<LaneAssignment>(emptyLanes)
   const [enemy, setEnemy] = useState<LaneAssignment>(() => makeBdsmEnemy())
   const [assignment, setAssignment] = useState<LaneAssignment>(emptyLanes)
@@ -59,11 +72,12 @@ export default function App() {
   const [demoNote, setDemoNote] = useState<string | null>(null)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [formatOpen, setFormatOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
-      return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'
+      return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'
     } catch {
-      return 'dark'
+      return 'light'
     }
   })
 
@@ -76,12 +90,11 @@ export default function App() {
     }
   }, [theme])
 
-  const reviFight = useMemo(
-    () => fightingLanes(revi, settings.maxPerLane),
-    [revi, settings.maxPerLane],
-  )
-
-  function resim(nextAssign: LaneAssignment, nextEnemy: LaneAssignment, nextRevi: LaneAssignment) {
+  function resim(
+    nextAssign: LaneAssignment,
+    nextEnemy: LaneAssignment,
+    nextRevi: LaneAssignment,
+  ) {
     const currentFight = fightingLanes(nextRevi, settings.maxPerLane)
     if (LANE_IDS.some((l) => nextAssign[l].length > 0)) {
       setResult(simulateMatch(nextAssign, nextEnemy, settings))
@@ -134,7 +147,7 @@ export default function App() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'revi-lineup.csv'
+    a.download = `${ourName}-lineup.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -142,6 +155,8 @@ export default function App() {
   function loadDemo() {
     const bdsm = makeBdsmEnemy()
     const reviNow = makeReviCurrentAssignment()
+    setOurName('REVI')
+    setEnemyName('BDSM')
     setEnemy(bdsm)
     setRevi(reviNow)
     setDemoNote(DEMO_NOTE)
@@ -165,32 +180,88 @@ export default function App() {
 
   const outcomeLabel = (r: MatchSimResult | null) => {
     if (!r) return '—'
-    if (r.outcome === 'win') return `Победа REVI ${r.ourFlags}:${r.theirFlags}`
+    if (r.outcome === 'win') return `Победа ${ourName} ${r.ourFlags}:${r.theirFlags}`
     if (r.outcome === 'lose') return `Поражение ${r.ourFlags}:${r.theirFlags}`
     return `Ничья ${r.ourFlags}:${r.theirFlags}`
   }
 
   return (
-    <div className="app-shell app-shell--single">
+    <div className={`app-shell ${navOpen ? 'nav-open' : ''}`}>
+      <aside className="side-nav">
+        <div className="side-nav-brand">
+          <div className="side-nav-logo" aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 8h16M4 12h16M4 16h10" strokeLinecap="round" />
+              <circle cx="18" cy="16" r="2" />
+            </svg>
+          </div>
+          <div className="side-nav-brand-text">
+            <span className="side-nav-title">Каньон</span>
+            <span className="side-nav-subtitle">
+              {ourName} vs {enemyName}
+            </span>
+          </div>
+        </div>
+
+        <nav className="side-nav-menu">
+          {NAV.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="side-nav-item"
+              onClick={() => {
+                scrollToId(item.id)
+                setNavOpen(false)
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <button
+          type="button"
+          className="side-nav-theme-toggle"
+          onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+        >
+          <span className="theme-icon" aria-hidden>
+            {theme === 'dark' ? '☀' : '☾'}
+          </span>
+          <span>{theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}</span>
+        </button>
+
+        <button type="button" className="btn btn-primary side-nav-demo" onClick={loadDemo}>
+          Демо
+        </button>
+      </aside>
+
+      <button
+        type="button"
+        className="nav-burger"
+        aria-label="Меню"
+        onClick={() => setNavOpen((v) => !v)}
+      >
+        ☰
+      </button>
+      {navOpen && (
+        <button
+          type="button"
+          className="nav-backdrop"
+          aria-label="Закрыть меню"
+          onClick={() => setNavOpen(false)}
+        />
+      )}
+
       <main className="app-main">
         <div className="app">
           <div className="game-topbar">
             <h1 className="title-cta">Завоевание каньона</h1>
-            <div className="topbar-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-              >
-                {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-              </button>
-              <button type="button" className="btn btn-primary" onClick={loadDemo}>
-                Демо REVI vs BDSM
-              </button>
-            </div>
+            <button type="button" className="btn btn-primary" onClick={loadDemo}>
+              Демо {ourName} vs {enemyName}
+            </button>
           </div>
 
-          <section className="panel rules-panel">
+          <section className="panel" id="rules">
             <button
               type="button"
               className="collapsible-toggle"
@@ -203,31 +274,23 @@ export default function App() {
             {rulesOpen && (
               <div className="rules-body">
                 <ul>
-                  <li>3 линии: левая, центральная, правая. Победа — у кого больше захваченных флагов.</li>
+                  <li>3 линии. Победа — у кого больше флагов.</li>
                   <li>
-                    Наша <strong>правая</strong> линия бьётся с их <strong>левой</strong>, наша левая —
-                    с их правой, центр с центром.
+                    Наша правая бьётся с их левой, наша левая — с их правой, центр с центром.
                   </li>
-                  <li>
-                    На линии в бой идут не больше <strong>15</strong> самых сильных отрядов (можно
-                    загрузить больше — лишние в запасе).
-                  </li>
-                  <li>
-                    Бой — эстафета: порядок от слабых к сильным; победитель идёт дальше с остатком
-                    мощи. Лимит боёв отряда — до 3.
-                  </li>
-                  <li>Лидер/офицеры могут перекидывать отряды между линиями до начала боя.</li>
+                  <li>В бой на линии — до 15 самых сильных (можно загрузить больше).</li>
+                  <li>Эстафета: слабые → сильные, победитель идёт с остатком мощи.</li>
                 </ul>
               </div>
             )}
           </section>
 
-          <section className="arena-banner">
+          <section className="arena-banner" id="vs">
             <div className="vs-row">
               <div className="vs-side vs-side--ally">
                 <div>
                   <span>наш альянс</span>
-                  <strong>#REVI</strong>
+                  <strong>#{ourName}</strong>
                 </div>
               </div>
               <div className="vs-badge" aria-hidden>
@@ -236,49 +299,15 @@ export default function App() {
               <div className="vs-side vs-side--enemy">
                 <div>
                   <span>противник</span>
-                  <strong>#BDSM</strong>
+                  <strong>#{enemyName}</strong>
                 </div>
               </div>
-            </div>
-
-            <div className="lane-summary">
-              {LANE_IDS.map((lane, idx) => {
-                const ours = assignment[lane]?.length
-                  ? assignment[lane]
-                  : reviFight[lane]
-                const theirs = fightingLanes(enemy, settings.maxPerLane)[lane]
-                const ourP = lanePower(ours)
-                const theirP = lanePower(theirs)
-                const sim = result?.lanes[lane]
-                const score =
-                  sim != null
-                    ? `${sim.winner === 'us' ? 'W' : sim.winner === 'them' ? 'L' : 'D'} · ${ours.length}:${theirs.length}`
-                    : `${ours.length}:${theirs.length}`
-                return (
-                  <div key={lane} className={`lane-card ${idx === 2 ? 'is-hot' : ''}`}>
-                    <h3>
-                      <span className="dot" />
-                      {LANE_LABELS[lane]}
-                    </h3>
-                    <div className="meta-line">
-                      <span>Участники</span>
-                      <b>{score}</b>
-                    </div>
-                    <div className="meta-line">
-                      <span>Мощь</span>
-                      <b>
-                        {formatMillions(ourP)} / {formatMillions(theirP)}
-                      </b>
-                    </div>
-                  </div>
-                )
-              })}
             </div>
           </section>
 
           {demoNote && <div className="toast-note">{demoNote}</div>}
 
-          <section className="panel">
+          <section className="panel" id="format">
             <button
               type="button"
               className="collapsible-toggle"
@@ -290,57 +319,52 @@ export default function App() {
             </button>
             {formatOpen && (
               <div className="rules-body">
-                <p>CSV / Excel с заголовками:</p>
                 <pre className="code-block">{`nick,power,lane
 PlayerOne,18500000,left
 PlayerTwo,16200000,center
 PlayerThree,15000000,right`}</pre>
                 <ul>
                   <li>
-                    <code>lane</code>: <code>left</code> / <code>center</code> / <code>right</code>{' '}
-                    (или лево / центр / право)
+                    <code>lane</code>: left / center / right (или лево / центр / право)
                   </li>
-                  <li>Без столбца lane все попадут на левую — потом перенесите вручную.</li>
-                  <li>
-                    Для REVI можно больше 15 на линию: в бою участвуют только 15 самых сильных.
-                  </li>
-                  <li>Мощь каждого игрока можно править прямо в таблице.</li>
+                  <li>Без lane — всё на левую, потом перенесите.</li>
+                  <li>Больше 15 на линию можно: в бой идут топ-15.</li>
                 </ul>
               </div>
             )}
           </section>
 
-          <div className="grid-2 equal-alliances">
+          <div className="grid-2 equal-alliances" id="alliances">
             <AlliancePanel
-              title="Альянс REVI"
-              allianceTag="REVI"
-              variant="ally"
+              name={ourName}
+              onNameChange={setOurName}
+              accent="ally"
               lanes={revi}
               onChange={handleReviChange}
-              allowOverflow
               maxFight={settings.maxPerLane}
             />
             <AlliancePanel
-              title="Альянс BDSM"
-              allianceTag="BDSM"
-              variant="enemy"
+              name={enemyName}
+              onNameChange={setEnemyName}
+              accent="enemy"
               lanes={enemy}
               onChange={handleEnemyChange}
-              allowOverflow
               maxFight={settings.maxPerLane}
             />
           </div>
 
-          <StrategyPanel
-            strategy={strategy}
-            onStrategy={setStrategy}
-            onApply={handleApply}
-            onExport={handleExport}
-          />
+          <div id="strategy">
+            <StrategyPanel
+              strategy={strategy}
+              onStrategy={setStrategy}
+              onApply={handleApply}
+              onExport={handleExport}
+            />
+          </div>
 
-          <div className="score-bar">
+          <div className="score-bar" id="score">
             <div>
-              <span className="muted">Сейчас (топ-15 на линиях)</span>
+              <span className="muted">Сейчас (топ-15)</span>
               <strong>{outcomeLabel(resultBefore)}</strong>
             </div>
             <div>
@@ -351,37 +375,53 @@ PlayerThree,15000000,right`}</pre>
             </div>
           </div>
 
-          <EnemyLineupView enemy={fightingLanes(enemy, settings.maxPerLane)} />
+          <div id="enemy-view">
+            <EnemyLineupView
+              enemy={fightingLanes(enemy, settings.maxPerLane)}
+              allianceName={enemyName}
+            />
+          </div>
 
-          <LineupResult
-            assignment={assignment}
-            allianceTag="REVI рекомендуем"
-            title="Рекомендуемая расстановка REVI"
-            maxPerLane={settings.maxPerLane}
-            onMove={handleMoveBetweenLanes}
-            showFacingHint
-            onEditPower={(id, power) => {
-              const nextAssign = updatePowerInLanes(assignment, id, power)
-              const nextRevi = updatePowerInLanes(revi, id, power)
-              setAssignment(nextAssign)
-              setRevi(nextRevi)
-              resim(nextAssign, enemy, nextRevi)
-            }}
-          />
+          <div id="recommended">
+            <LineupResult
+              assignment={assignment}
+              allianceTag={`${ourName} рекомендуем`}
+              title={`Рекомендуемая расстановка ${ourName}`}
+              maxPerLane={settings.maxPerLane}
+              onMove={handleMoveBetweenLanes}
+              showFacingHint
+              onEditPower={(id, power) => {
+                const nextAssign = updatePowerInLanes(assignment, id, power)
+                const nextRevi = updatePowerInLanes(revi, id, power)
+                setAssignment(nextAssign)
+                setRevi(nextRevi)
+                resim(nextAssign, enemy, nextRevi)
+              }}
+            />
+          </div>
 
-          <LineupResult
-            assignment={revi}
-            allianceTag="REVI загружено"
-            title="Составы из загруженных списков REVI"
-            maxPerLane={settings.maxPerLane}
-            onEditPower={(id, power) => {
-              const nextRevi = updatePowerInLanes(revi, id, power)
-              setRevi(nextRevi)
-              resim(assignment, enemy, nextRevi)
-            }}
-          />
+          <div id="uploaded">
+            <LineupResult
+              assignment={revi}
+              allianceTag={`${ourName} загружено`}
+              title={`Составы из загруженных списков ${ourName}`}
+              maxPerLane={settings.maxPerLane}
+              onEditPower={(id, power) => {
+                const nextRevi = updatePowerInLanes(revi, id, power)
+                setRevi(nextRevi)
+                resim(assignment, enemy, nextRevi)
+              }}
+            />
+          </div>
 
-          <SimResults result={result} title="Прогноз боёв (после оптимизации)" />
+          <div id="battles">
+            <SimResults
+              result={result}
+              title="Прогноз боёв (после оптимизации)"
+              ourLabel={ourName}
+              theirLabel={enemyName}
+            />
+          </div>
         </div>
       </main>
     </div>
