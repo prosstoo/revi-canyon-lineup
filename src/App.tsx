@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AlliancePanel } from './components/AlliancePanel'
-import { EnemyLineupView, LineupResult } from './components/LineupResult'
+import { MatchupLineups } from './components/MatchupLineups'
 import { SimResults } from './components/SimResults'
 import { StrategyPanel } from './components/StrategyPanel'
 import { assignmentToCsv } from './lib/parseRoster'
@@ -35,7 +35,6 @@ const NAV = [
   { id: 'alliances', label: 'Составы' },
   { id: 'strategy', label: 'Стратегия' },
   { id: 'score', label: 'Прогноз' },
-  { id: 'enemy-view', label: 'Линии врага' },
   { id: 'recommended', label: 'Рекомендация' },
   { id: 'uploaded', label: 'Загружено' },
   { id: 'battles', label: 'Бои' },
@@ -69,7 +68,9 @@ export default function App() {
   const [settings] = useState<BattleSettings>(DEFAULT_SETTINGS)
   const [resultBefore, setResultBefore] = useState<MatchSimResult | null>(null)
   const [result, setResult] = useState<MatchSimResult | null>(null)
+  const [hasCalculated, setHasCalculated] = useState(false)
   const [demoNote, setDemoNote] = useState<string | null>(null)
+  const [noPerfectNote, setNoPerfectNote] = useState<string | null>(null)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [formatOpen, setFormatOpen] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
@@ -120,10 +121,24 @@ export default function App() {
     if (pool.length === 0) return
     setDemoNote(null)
     const currentFight = fightingLanes(revi, settings.maxPerLane)
-    setResultBefore(simulateMatch(currentFight, enemy, settings))
+    const before = simulateMatch(currentFight, enemy, settings)
+    setResultBefore(before)
     const next = applyStrategy(strategy, pool, enemy, settings)
+    const after = simulateMatch(next, enemy, settings)
     setAssignment(next)
-    setResult(simulateMatch(next, enemy, settings))
+    setResult(after)
+    setHasCalculated(true)
+    if (after.ourFlags === 3 && after.theirFlags === 0) {
+      setNoPerfectNote(null)
+    } else if (strategy === 'maximizeFlags') {
+      setNoPerfectNote(
+        after.ourFlags < 3
+          ? `Вариант 3:0 для текущего состава не найден (лучший прогноз ${after.ourFlags}:${after.theirFlags}).`
+          : null,
+      )
+    } else {
+      setNoPerfectNote(null)
+    }
   }
 
   function handleMoveBetweenLanes(playerId: string, from: LaneId, to: LaneId) {
@@ -159,18 +174,13 @@ export default function App() {
     setEnemyName('BDSM')
     setEnemy(bdsm)
     setRevi(reviNow)
+    setAssignment(emptyLanes())
+    setResult(null)
+    setResultBefore(null)
+    setHasCalculated(false)
+    setNoPerfectNote(null)
     setDemoNote(DEMO_NOTE)
     setStrategy('maximizeFlags')
-    const before = simulateMatch(reviNow, bdsm, settings)
-    setResultBefore(before)
-    const optimized = applyStrategy(
-      'maximizeFlags',
-      flatPlayers(reviNow),
-      bdsm,
-      settings,
-    )
-    setAssignment(optimized)
-    setResult(simulateMatch(optimized, bdsm, settings))
   }
 
   useEffect(() => {
@@ -366,66 +376,69 @@ PlayerThree,15000000,right`}</pre>
             />
           </div>
 
-          <div className="score-bar" id="score">
-            <div>
-              <span className="muted">Сейчас (топ-15)</span>
-              <strong>{outcomeLabel(resultBefore)}</strong>
-            </div>
-            <div>
-              <span className="muted">После оптимизации</span>
-              <strong className={result?.outcome === 'win' ? 'ok' : ''}>
-                {outcomeLabel(result)}
-              </strong>
-            </div>
-          </div>
-
-          <div id="enemy-view">
-            <EnemyLineupView
-              enemy={fightingLanes(enemy, settings.maxPerLane)}
-              allianceName={enemyName}
-            />
-          </div>
-
-          <div id="recommended">
-            <LineupResult
-              assignment={assignment}
-              allianceTag={`${ourName} рекомендуем`}
-              title={`Рекомендуемая расстановка ${ourName}`}
-              maxPerLane={settings.maxPerLane}
-              onMove={handleMoveBetweenLanes}
-              showFacingHint
-              onEditPower={(id, power) => {
-                const nextAssign = updatePowerInLanes(assignment, id, power)
-                const nextRevi = updatePowerInLanes(revi, id, power)
-                setAssignment(nextAssign)
-                setRevi(nextRevi)
-                resim(nextAssign, enemy, nextRevi)
-              }}
-            />
-          </div>
-
-          <div id="uploaded">
-            <LineupResult
-              assignment={revi}
-              allianceTag={`${ourName} загружено`}
-              title={`Составы из загруженных списков ${ourName}`}
-              maxPerLane={settings.maxPerLane}
-              onEditPower={(id, power) => {
-                const nextRevi = updatePowerInLanes(revi, id, power)
-                setRevi(nextRevi)
-                resim(assignment, enemy, nextRevi)
-              }}
-            />
-          </div>
-
-          <div id="battles">
-            <SimResults
-              result={result}
-              title="Прогноз боёв (после оптимизации)"
-              ourLabel={ourName}
-              theirLabel={enemyName}
-            />
-          </div>
+          {hasCalculated && (
+            <>
+              <div className="score-bar" id="score">
+                <div>
+                  <span className="muted">Сейчас (топ-15)</span>
+                  <strong>{outcomeLabel(resultBefore)}</strong>
+                </div>
+                <div>
+                  <span className="muted">После оптимизации</span>
+                  <strong className={result?.outcome === 'win' ? 'ok' : ''}>
+                    {outcomeLabel(result)}
+                  </strong>
+                </div>
+              </div>
+              {noPerfectNote && <div className="toast-note toast-note--warn">{noPerfectNote}</div>}
+              <div id="recommended">
+                <MatchupLineups
+                  title={`Рекомендуемая расстановка · ${ourName} vs ${enemyName}`}
+                  badge="Рекомендация"
+                  ourName={ourName}
+                  enemyName={enemyName}
+                  ours={assignment}
+                  enemy={enemy}
+                  maxPerLane={settings.maxPerLane}
+                  result={result}
+                  editable
+                  onMove={handleMoveBetweenLanes}
+                  onEditPower={(id, power) => {
+                    const nextAssign = updatePowerInLanes(assignment, id, power)
+                    const nextRevi = updatePowerInLanes(revi, id, power)
+                    setAssignment(nextAssign)
+                    setRevi(nextRevi)
+                    resim(nextAssign, enemy, nextRevi)
+                  }}
+                />
+              </div>
+              <div id="uploaded">
+                <MatchupLineups
+                  title={`Загруженная расстановка · ${ourName} vs ${enemyName}`}
+                  badge="Загружено"
+                  ourName={ourName}
+                  enemyName={enemyName}
+                  ours={revi}
+                  enemy={enemy}
+                  maxPerLane={settings.maxPerLane}
+                  result={resultBefore}
+                />
+              </div>
+              <div id="battles">
+                <SimResults
+                  result={result}
+                  title="Прогноз боёв (после оптимизации)"
+                  ourLabel={ourName}
+                  theirLabel={enemyName}
+                />
+              </div>
+            </>
+          )}
+          {!hasCalculated && (
+            <section className="panel" id="score">
+              <p className="muted">Нажмите «Рассчитать расстановку», чтобы увидеть составы линий (6 таблиц) и прогноз.</p>
+            </section>
+          )}
         </div>
       </main>
     </div>
