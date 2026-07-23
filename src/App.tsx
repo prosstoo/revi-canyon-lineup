@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AlliancePanel } from './components/AlliancePanel'
 import { EnemyLineupView, LineupResult } from './components/LineupResult'
-import { OpponentSetup } from './components/OpponentSetup'
-import { RosterUpload } from './components/RosterUpload'
 import { SimResults } from './components/SimResults'
 import { StrategyPanel } from './components/StrategyPanel'
 import { assignmentToCsv } from './lib/parseRoster'
@@ -9,24 +8,26 @@ import {
   DEMO_NOTE,
   makeBdsmEnemy,
   makeReviCurrentAssignment,
-  makeReviRoster,
 } from './lib/sampleData'
-import { emptyLanes, lanePower, simulateMatch } from './lib/simulate'
+import {
+  emptyLanes,
+  fightingLanes,
+  flatPlayers,
+  lanePower,
+  simulateMatch,
+} from './lib/simulate'
 import { applyStrategy } from './lib/strategies'
 import type {
   BattleSettings,
   LaneAssignment,
   LaneId,
   MatchSimResult,
-  Player,
   StrategyId,
 } from './types'
 import { DEFAULT_SETTINGS, LANE_IDS, LANE_LABELS } from './types'
 import './App.css'
 
-function flatFromAssignment(a: LaneAssignment): Player[] {
-  return LANE_IDS.flatMap((l) => a[l])
-}
+const THEME_KEY = 'canyon-theme'
 
 function formatMillions(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 100_000_000 ? 0 : 1)}M`
@@ -48,70 +49,68 @@ function updatePowerInLanes(
 }
 
 export default function App() {
-  const [roster, setRoster] = useState<Player[]>([])
+  const [revi, setRevi] = useState<LaneAssignment>(emptyLanes)
   const [enemy, setEnemy] = useState<LaneAssignment>(() => makeBdsmEnemy())
-  const [currentAssignment, setCurrentAssignment] =
-    useState<LaneAssignment>(emptyLanes)
   const [assignment, setAssignment] = useState<LaneAssignment>(emptyLanes)
   const [strategy, setStrategy] = useState<StrategyId>('maximizeFlags')
   const [settings] = useState<BattleSettings>(DEFAULT_SETTINGS)
   const [resultBefore, setResultBefore] = useState<MatchSimResult | null>(null)
   const [result, setResult] = useState<MatchSimResult | null>(null)
   const [demoNote, setDemoNote] = useState<string | null>(null)
-
-  const assignedIds = useMemo(() => {
-    const s = new Set<string>()
-    for (const lane of LANE_IDS) {
-      for (const p of assignment[lane]) s.add(p.id)
+  const [rulesOpen, setRulesOpen] = useState(false)
+  const [formatOpen, setFormatOpen] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'
+    } catch {
+      return 'dark'
     }
-    return s
-  }, [assignment])
+  })
 
-  const unassigned = useMemo(
-    () => roster.filter((p) => !assignedIds.has(p.id)),
-    [roster, assignedIds],
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    try {
+      localStorage.setItem(THEME_KEY, theme)
+    } catch {
+      /* ignore */
+    }
+  }, [theme])
+
+  const reviFight = useMemo(
+    () => fightingLanes(revi, settings.maxPerLane),
+    [revi, settings.maxPerLane],
   )
 
-  function resim(nextAssignment: LaneAssignment, nextEnemy: LaneAssignment, nextCurrent: LaneAssignment) {
-    if (LANE_IDS.some((l) => nextAssignment[l].length > 0)) {
-      setResult(simulateMatch(nextAssignment, nextEnemy, settings))
+  function resim(nextAssign: LaneAssignment, nextEnemy: LaneAssignment, nextRevi: LaneAssignment) {
+    const currentFight = fightingLanes(nextRevi, settings.maxPerLane)
+    if (LANE_IDS.some((l) => nextAssign[l].length > 0)) {
+      setResult(simulateMatch(nextAssign, nextEnemy, settings))
     }
-    if (LANE_IDS.some((l) => nextCurrent[l].length > 0)) {
-      setResultBefore(simulateMatch(nextCurrent, nextEnemy, settings))
+    if (LANE_IDS.some((l) => currentFight[l].length > 0)) {
+      setResultBefore(simulateMatch(currentFight, nextEnemy, settings))
     }
   }
 
-  function handleRosterChange(players: Player[]) {
-    setRoster(players)
-    setCurrentAssignment(emptyLanes())
-    setAssignment(emptyLanes())
-    setResult(null)
-    setResultBefore(null)
+  function handleReviChange(next: LaneAssignment) {
+    setRevi(next)
     setDemoNote(null)
+    resim(assignment, enemy, next)
   }
 
   function handleEnemyChange(next: LaneAssignment) {
     setEnemy(next)
-    resim(assignment, next, currentAssignment)
-  }
-
-  function optimize(players: Player[], vs: LaneAssignment, current: LaneAssignment) {
-    const before =
-      LANE_IDS.some((l) => current[l].length > 0)
-        ? simulateMatch(current, vs, settings)
-        : null
-    setResultBefore(before)
-    const next = applyStrategy(strategy, players, vs, settings)
-    setAssignment(next)
-    setResult(simulateMatch(next, vs, settings))
+    resim(assignment, next, revi)
   }
 
   function handleApply() {
-    const players =
-      roster.length > 0 ? roster : flatFromAssignment(currentAssignment)
-    if (players.length === 0) return
+    const pool = flatPlayers(revi)
+    if (pool.length === 0) return
     setDemoNote(null)
-    optimize(players, enemy, currentAssignment)
+    const currentFight = fightingLanes(revi, settings.maxPerLane)
+    setResultBefore(simulateMatch(currentFight, enemy, settings))
+    const next = applyStrategy(strategy, pool, enemy, settings)
+    setAssignment(next)
+    setResult(simulateMatch(next, enemy, settings))
   }
 
   function handleMoveBetweenLanes(playerId: string, from: LaneId, to: LaneId) {
@@ -143,15 +142,18 @@ export default function App() {
   function loadDemo() {
     const bdsm = makeBdsmEnemy()
     const reviNow = makeReviCurrentAssignment()
-    const players = makeReviRoster()
     setEnemy(bdsm)
-    setRoster(players)
-    setCurrentAssignment(reviNow)
+    setRevi(reviNow)
     setDemoNote(DEMO_NOTE)
     setStrategy('maximizeFlags')
     const before = simulateMatch(reviNow, bdsm, settings)
     setResultBefore(before)
-    const optimized = applyStrategy('maximizeFlags', players, bdsm, settings)
+    const optimized = applyStrategy(
+      'maximizeFlags',
+      flatPlayers(reviNow),
+      bdsm,
+      settings,
+    )
     setAssignment(optimized)
     setResult(simulateMatch(optimized, bdsm, settings))
   }
@@ -173,18 +175,52 @@ export default function App() {
       <main className="app-main">
         <div className="app">
           <div className="game-topbar">
-            <h1>Завоевание каньона</h1>
-            <button type="button" className="btn btn-primary" onClick={loadDemo}>
-              Демо REVI vs BDSM
-            </button>
+            <h1 className="title-cta">Завоевание каньона</h1>
+            <div className="topbar-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+              >
+                {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+              </button>
+              <button type="button" className="btn btn-primary" onClick={loadDemo}>
+                Демо REVI vs BDSM
+              </button>
+            </div>
           </div>
 
-          <div className="game-phases">
-            <span className="phase-pill">Регистрация</span>
-            <span className="phase-pill">Группировка</span>
-            <span className="phase-pill is-active">Фаза сражения</span>
-            <span className="phase-pill">Награды</span>
-          </div>
+          <section className="panel rules-panel">
+            <button
+              type="button"
+              className="collapsible-toggle"
+              onClick={() => setRulesOpen((v) => !v)}
+              aria-expanded={rulesOpen}
+            >
+              <span>Правила ивента</span>
+              <span className="chevron">{rulesOpen ? '▾' : '▸'}</span>
+            </button>
+            {rulesOpen && (
+              <div className="rules-body">
+                <ul>
+                  <li>3 линии: левая, центральная, правая. Победа — у кого больше захваченных флагов.</li>
+                  <li>
+                    Наша <strong>правая</strong> линия бьётся с их <strong>левой</strong>, наша левая —
+                    с их правой, центр с центром.
+                  </li>
+                  <li>
+                    На линии в бой идут не больше <strong>15</strong> самых сильных отрядов (можно
+                    загрузить больше — лишние в запасе).
+                  </li>
+                  <li>
+                    Бой — эстафета: порядок от слабых к сильным; победитель идёт дальше с остатком
+                    мощи. Лимит боёв отряда — до 3.
+                  </li>
+                  <li>Лидер/офицеры могут перекидывать отряды между линиями до начала боя.</li>
+                </ul>
+              </div>
+            )}
+          </section>
 
           <section className="arena-banner">
             <div className="vs-row">
@@ -207,8 +243,10 @@ export default function App() {
 
             <div className="lane-summary">
               {LANE_IDS.map((lane, idx) => {
-                const ours = assignment[lane] ?? []
-                const theirs = enemy[lane] ?? []
+                const ours = assignment[lane]?.length
+                  ? assignment[lane]
+                  : reviFight[lane]
+                const theirs = fightingLanes(enemy, settings.maxPerLane)[lane]
                 const ourP = lanePower(ours)
                 const theirP = lanePower(theirs)
                 const sim = result?.lanes[lane]
@@ -217,10 +255,7 @@ export default function App() {
                     ? `${sim.winner === 'us' ? 'W' : sim.winner === 'them' ? 'L' : 'D'} · ${ours.length}:${theirs.length}`
                     : `${ours.length}:${theirs.length}`
                 return (
-                  <div
-                    key={lane}
-                    className={`lane-card ${idx === 2 ? 'is-hot' : ''}`}
-                  >
+                  <div key={lane} className={`lane-card ${idx === 2 ? 'is-hot' : ''}`}>
                     <h3>
                       <span className="dot" />
                       {LANE_LABELS[lane]}
@@ -243,18 +278,59 @@ export default function App() {
 
           {demoNote && <div className="toast-note">{demoNote}</div>}
 
-          {/* 1. Два альянса одинаковой ширины */}
+          <section className="panel">
+            <button
+              type="button"
+              className="collapsible-toggle"
+              onClick={() => setFormatOpen((v) => !v)}
+              aria-expanded={formatOpen}
+            >
+              <span>Формат загрузки списков игроков</span>
+              <span className="chevron">{formatOpen ? '▾' : '▸'}</span>
+            </button>
+            {formatOpen && (
+              <div className="rules-body">
+                <p>CSV / Excel с заголовками:</p>
+                <pre className="code-block">{`nick,power,lane
+PlayerOne,18500000,left
+PlayerTwo,16200000,center
+PlayerThree,15000000,right`}</pre>
+                <ul>
+                  <li>
+                    <code>lane</code>: <code>left</code> / <code>center</code> / <code>right</code>{' '}
+                    (или лево / центр / право)
+                  </li>
+                  <li>Без столбца lane все попадут на левую — потом перенесите вручную.</li>
+                  <li>
+                    Для REVI можно больше 15 на линию: в бою участвуют только 15 самых сильных.
+                  </li>
+                  <li>Мощь каждого игрока можно править прямо в таблице.</li>
+                </ul>
+              </div>
+            )}
+          </section>
+
           <div className="grid-2 equal-alliances">
-            <RosterUpload
+            <AlliancePanel
               title="Альянс REVI"
               allianceTag="REVI"
-              players={roster}
-              onChange={handleRosterChange}
+              variant="ally"
+              lanes={revi}
+              onChange={handleReviChange}
+              allowOverflow
+              maxFight={settings.maxPerLane}
             />
-            <OpponentSetup enemy={enemy} onChange={handleEnemyChange} />
+            <AlliancePanel
+              title="Альянс BDSM"
+              allianceTag="BDSM"
+              variant="enemy"
+              lanes={enemy}
+              onChange={handleEnemyChange}
+              allowOverflow
+              maxFight={settings.maxPerLane}
+            />
           </div>
 
-          {/* 2. Стратегия без настроек */}
           <StrategyPanel
             strategy={strategy}
             onStrategy={setStrategy}
@@ -262,10 +338,9 @@ export default function App() {
             onExport={handleExport}
           />
 
-          {/* 3. Прогноз побед */}
           <div className="score-bar">
             <div>
-              <span className="muted">Сейчас (текущая расстановка)</span>
+              <span className="muted">Сейчас (топ-15 на линиях)</span>
               <strong>{outcomeLabel(resultBefore)}</strong>
             </div>
             <div>
@@ -276,22 +351,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* 4. Составы соперника */}
-          <EnemyLineupView
-            enemy={enemy}
-            onEditPower={(lane, id, power) => {
-              const next = {
-                ...enemy,
-                [lane]: enemy[lane].map((p) =>
-                  p.id === id ? { ...p, power } : p,
-                ),
-              }
-              setEnemy(next)
-              resim(assignment, next, currentAssignment)
-            }}
-          />
+          <EnemyLineupView enemy={fightingLanes(enemy, settings.maxPerLane)} />
 
-          {/* 5. Рекомендуемая расстановка */}
           <LineupResult
             assignment={assignment}
             allianceTag="REVI рекомендуем"
@@ -301,86 +362,25 @@ export default function App() {
             showFacingHint
             onEditPower={(id, power) => {
               const nextAssign = updatePowerInLanes(assignment, id, power)
-              const nextRoster = roster.map((p) =>
-                p.id === id ? { ...p, power } : p,
-              )
-              const nextCurrent = updatePowerInLanes(currentAssignment, id, power)
+              const nextRevi = updatePowerInLanes(revi, id, power)
               setAssignment(nextAssign)
-              setRoster(nextRoster)
-              setCurrentAssignment(nextCurrent)
-              resim(nextAssign, enemy, nextCurrent)
+              setRevi(nextRevi)
+              resim(nextAssign, enemy, nextRevi)
             }}
           />
 
-          {/* 6. Загруженные / текущие списки */}
-          {LANE_IDS.some((l) => currentAssignment[l].length > 0) && (
-            <LineupResult
-              assignment={currentAssignment}
-              allianceTag="REVI загружено"
-              title="Составы из загруженных списков (текущая расстановка)"
-              maxPerLane={settings.maxPerLane}
-              onEditPower={(id, power) => {
-                const nextCurrent = updatePowerInLanes(currentAssignment, id, power)
-                const nextRoster = roster.map((p) =>
-                  p.id === id ? { ...p, power } : p,
-                )
-                setCurrentAssignment(nextCurrent)
-                setRoster(nextRoster)
-                resim(assignment, enemy, nextCurrent)
-              }}
-            />
-          )}
+          <LineupResult
+            assignment={revi}
+            allianceTag="REVI загружено"
+            title="Составы из загруженных списков REVI"
+            maxPerLane={settings.maxPerLane}
+            onEditPower={(id, power) => {
+              const nextRevi = updatePowerInLanes(revi, id, power)
+              setRevi(nextRevi)
+              resim(assignment, enemy, nextRevi)
+            }}
+          />
 
-          {unassigned.length > 0 && (
-            <section className="panel">
-              <div className="panel-head">
-                <h2>Не на линии</h2>
-                <span className="badge">{unassigned.length}</span>
-              </div>
-              <table className="plain-table">
-                <thead>
-                  <tr>
-                    <th>Ник</th>
-                    <th className="col-pow">Мощь</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...unassigned]
-                    .sort((a, b) => b.power - a.power)
-                    .map((p) => (
-                      <tr key={p.id}>
-                        <td>{p.nick}</td>
-                        <td className="col-pow">
-                          <input
-                            className="power-input"
-                            type="text"
-                            inputMode="numeric"
-                            defaultValue={String(p.power)}
-                            key={`${p.id}-${p.power}`}
-                            onBlur={(e) => {
-                              const n = Number(
-                                e.target.value.replace(/[\s\u00a0,]/g, ''),
-                              )
-                              if (Number.isFinite(n) && n > 0 && n !== p.power) {
-                                setRoster(
-                                  roster.map((x) =>
-                                    x.id === p.id ? { ...x, power: Math.round(n) } : x,
-                                  ),
-                                )
-                              } else {
-                                e.target.value = String(p.power)
-                              }
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </section>
-          )}
-
-          {/* 7. Прогноз боёв */}
           <SimResults result={result} title="Прогноз боёв (после оптимизации)" />
         </div>
       </main>

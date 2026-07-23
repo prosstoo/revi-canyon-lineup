@@ -147,12 +147,16 @@ export function simulateLane(
   return { lane, facingLane, winner, ourSurvivors, theirSurvivors, fights }
 }
 
-/** Наша левая бьётся с их правой, наша правая — с их левой, центр — с центром */
+/** Наша левая бьётся с их правой, наша правая — с их левой, центр — с центром.
+ *  На каждой линии в бой идут только maxPerLane самых сильных.
+ */
 export function simulateMatch(
   ours: Record<LaneId, Player[]>,
   theirs: Record<LaneId, Player[]>,
   settings: BattleSettings,
 ): MatchSimResult {
+  const ourFight = fightingLanes(ours, settings.maxPerLane)
+  const theirFight = fightingLanes(theirs, settings.maxPerLane)
   const lanes = {} as Record<LaneId, LaneSimResult>
   let ourFlags = 0
   let theirFlags = 0
@@ -162,8 +166,8 @@ export function simulateMatch(
     const result = simulateLane(
       lane,
       facing,
-      ours[lane] ?? [],
-      theirs[facing] ?? [],
+      ourFight[lane] ?? [],
+      theirFight[facing] ?? [],
       settings,
     )
     lanes[lane] = result
@@ -187,11 +191,32 @@ export function emptyLanes(): Record<LaneId, Player[]> {
   return { left: [], center: [], right: [] }
 }
 
+/** Топ-N по мощи на линии (в бой) */
+export function topFighters(players: Player[], maxPerLane: number): Player[] {
+  return [...players].sort((a, b) => b.power - a.power).slice(0, maxPerLane)
+}
+
+export function fightingLanes(
+  lanes: Record<LaneId, Player[]>,
+  maxPerLane: number,
+): Record<LaneId, Player[]> {
+  return {
+    left: topFighters(lanes.left ?? [], maxPerLane),
+    center: topFighters(lanes.center ?? [], maxPerLane),
+    right: topFighters(lanes.right ?? [], maxPerLane),
+  }
+}
+
+export function flatPlayers(lanes: Record<LaneId, Player[]>): Player[] {
+  return [...(lanes.left ?? []), ...(lanes.center ?? []), ...(lanes.right ?? [])]
+}
+
 /** Сортировка для списков: сильные сверху, номер хода N…1 */
 export function sortForDisplay(players: Player[]): Player[] {
   return [...players].sort((a, b) => b.power - a.power)
 }
 
 export function turnOrderNumber(indexFromStrong: number, total: number): number {
+  if (indexFromStrong < 0) return 0
   return total - indexFromStrong
 }
