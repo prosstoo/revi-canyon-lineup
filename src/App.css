@@ -95,12 +95,34 @@ body,
 
 body {
   font-family: var(--font);
-  background: var(--bg);
-  background-image: linear-gradient(180deg, var(--bg) 0%, var(--surface-hover) 120%);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg) 78%, transparent) 0%, color-mix(in srgb, var(--bg) 88%, transparent) 55%, color-mix(in srgb, var(--bg) 92%, transparent) 100%),
+    url('./assets/canyon-knights-bg.png');
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   color: var(--text);
   line-height: 1.5;
-  transition: background 0.25s ease, color 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
   -webkit-font-smoothing: antialiased;
+}
+
+[data-theme='dark'] body {
+  background-image:
+    linear-gradient(180deg, rgba(11, 21, 32, 0.82) 0%, rgba(11, 21, 32, 0.88) 50%, rgba(11, 21, 32, 0.92) 100%),
+    url('./assets/canyon-knights-bg.png');
+}
+
+[data-theme='light'] body {
+  background-image:
+    linear-gradient(180deg, rgba(229, 240, 250, 0.72) 0%, rgba(229, 240, 250, 0.82) 45%, rgba(242, 248, 253, 0.9) 100%),
+    url('./assets/canyon-knights-bg.png');
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+  filter: none;
 }
 
 button,
@@ -229,6 +251,8 @@ textarea {
 .app-main {
   flex: 1;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .app.app-wide,
