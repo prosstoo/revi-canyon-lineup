@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { formatPower } from '../lib/parseRoster'
 import {
   fightingLanes,
@@ -18,6 +19,8 @@ interface Props {
   maxPerLane: number
   result?: MatchSimResult | null
   editable?: boolean
+  collapsible?: boolean
+  defaultOpen?: boolean
   onMove?: (playerId: string, from: LaneId, to: LaneId) => void
   onEditPower?: (playerId: string, power: number) => void
 }
@@ -33,91 +36,126 @@ export function MatchupLineups({
   maxPerLane,
   result,
   editable,
+  collapsible,
+  defaultOpen = true,
   onMove,
   onEditPower,
 }: Props) {
+  const [open, setOpen] = useState(defaultOpen)
   const ourFight = fightingLanes(ours, maxPerLane)
   const theirFight = fightingLanes(enemy, maxPerLane)
 
   return (
     <section className="panel matchup-panel">
-      <div className="panel-head">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted small">
-            В каждом поединке слева — {ourName}, справа — линия {enemyName} напротив.
-            Порядок: сильные → слабые.
-          </p>
+      {collapsible ? (
+        <button
+          type="button"
+          className="collapsible-toggle"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+        >
+          <span className="collapsible-toggle__title">
+            {title}
+            {result && (
+              <span
+                className={`badge ${result.outcome === 'win' ? 'badge-ok' : result.outcome === 'lose' ? 'badge-warn' : ''}`}
+              >
+                {result.ourFlags}:{result.theirFlags}
+              </span>
+            )}
+            <span className="badge badge-ok">{badge}</span>
+          </span>
+          <span className="chevron">{open ? '▾' : '▸'}</span>
+        </button>
+      ) : (
+        <div className="panel-head">
+          <div>
+            <h2>{title}</h2>
+            <p className="muted small">
+              В каждом поединке слева — {ourName}, справа — линия {enemyName} напротив.
+              Порядок: сильные → слабые.
+            </p>
+          </div>
+          <div className="matchup-head-meta">
+            {result && (
+              <span
+                className={`badge ${result.outcome === 'win' ? 'badge-ok' : result.outcome === 'lose' ? 'badge-warn' : ''}`}
+              >
+                {result.ourFlags}:{result.theirFlags}
+              </span>
+            )}
+            <span className="badge badge-ok">{badge}</span>
+          </div>
         </div>
-        <div className="matchup-head-meta">
-          {result && (
-            <span
-              className={`badge ${result.outcome === 'win' ? 'badge-ok' : result.outcome === 'lose' ? 'badge-warn' : ''}`}
-            >
-              {result.ourFlags}:{result.theirFlags}
-            </span>
-          )}
-          <span className="badge badge-ok">{badge}</span>
-        </div>
-      </div>
+      )}
 
-      <div className="matchup-scroll">
-        <div className="matchup-grid">
-          {LANE_IDS.map((ourLane) => {
-            const theirLane = FACING_LANE[ourLane]
-            const laneResult = result?.lanes[ourLane]
-            return (
-              <div key={ourLane} className="matchup-pair">
-                <div className="matchup-pair-label">
-                  <span>
-                    {LANE_LABELS[ourLane]} vs {LANE_LABELS[theirLane]}
-                  </span>
-                  {laneResult && (
-                    <span
-                      className={
-                        laneResult.winner === 'us'
-                          ? 'ok'
-                          : laneResult.winner === 'them'
-                            ? 'err'
-                            : 'muted'
-                      }
-                    >
-                      {laneResult.winner === 'us'
-                        ? 'флаг наш'
-                        : laneResult.winner === 'them'
-                          ? 'флаг врага'
-                          : 'ничья'}
-                    </span>
-                  )}
-                </div>
-                <div className="matchup-pair-tables">
-                  <LaneMiniTable
-                    accent="ally"
-                    title={`${ourName} · ${shortLane(ourLane)}`}
-                    subtitle="наш состав"
-                    lane={ourLane}
-                    players={ourFight[ourLane]}
-                    fullCount={ours[ourLane].length}
-                    maxPerLane={maxPerLane}
-                    editable={editable}
-                    onMove={onMove}
-                    onEditPower={onEditPower}
-                  />
-                  <LaneMiniTable
-                    accent="enemy"
-                    title={`${enemyName} · ${shortLane(theirLane)}`}
-                    subtitle="напротив"
-                    lane={theirLane}
-                    players={theirFight[theirLane]}
-                    fullCount={enemy[theirLane].length}
-                    maxPerLane={maxPerLane}
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      {(!collapsible || open) && (
+        <>
+          {collapsible && (
+            <p className="muted small matchup-hint">
+              В каждом поединке слева — {ourName}, справа — линия {enemyName} напротив.
+              Порядок: сильные → слабые.
+            </p>
+          )}
+          <div className="matchup-scroll">
+            <div className="matchup-grid">
+              {LANE_IDS.map((ourLane) => {
+                const theirLane = FACING_LANE[ourLane]
+                const laneResult = result?.lanes[ourLane]
+                return (
+                  <div key={ourLane} className="matchup-pair">
+                    <div className="matchup-pair-label">
+                      <span>
+                        {LANE_LABELS[ourLane]} vs {LANE_LABELS[theirLane]}
+                      </span>
+                      {laneResult && (
+                        <span
+                          className={
+                            laneResult.winner === 'us'
+                              ? 'ok'
+                              : laneResult.winner === 'them'
+                                ? 'err'
+                                : 'muted'
+                          }
+                        >
+                          {laneResult.winner === 'us'
+                            ? 'флаг наш'
+                            : laneResult.winner === 'them'
+                              ? 'флаг врага'
+                              : 'ничья'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="matchup-pair-tables">
+                      <LaneMiniTable
+                        accent="ally"
+                        title={`${ourName} · ${shortLane(ourLane)}`}
+                        subtitle="наш состав"
+                        lane={ourLane}
+                        players={ourFight[ourLane]}
+                        fullCount={ours[ourLane].length}
+                        maxPerLane={maxPerLane}
+                        editable={editable}
+                        onMove={onMove}
+                        onEditPower={onEditPower}
+                      />
+                      <LaneMiniTable
+                        accent="enemy"
+                        title={`${enemyName} · ${shortLane(theirLane)}`}
+                        subtitle="напротив"
+                        lane={theirLane}
+                        players={theirFight[theirLane]}
+                        fullCount={enemy[theirLane].length}
+                        maxPerLane={maxPerLane}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   )
 }

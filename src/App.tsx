@@ -73,6 +73,7 @@ export default function App() {
   const [noPerfectNote, setNoPerfectNote] = useState<string | null>(null)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [formatOpen, setFormatOpen] = useState(false)
+  const [vsOpen, setVsOpen] = useState(true)
   const [navOpen, setNavOpen] = useState(false)
   type NavId = (typeof NAV)[number]['id']
   const [activeNav, setActiveNav] = useState<NavId>(NAV[0].id)
@@ -317,26 +318,39 @@ export default function App() {
             )}
           </section>
 
-          <section className="arena-banner" id="vs">
+          <section className={`arena-banner${vsOpen ? '' : ' arena-banner--collapsed'}`} id="vs">
             <div className="arena-banner__art" aria-hidden />
             <div className="arena-banner__content">
-              <div className="vs-row">
-                <div className="vs-side vs-side--ally">
-                  <div>
-                    <span>наш альянс</span>
-                    <strong>#{ourName}</strong>
+              <button
+                type="button"
+                className="collapsible-toggle arena-banner__toggle"
+                onClick={() => setVsOpen((v) => !v)}
+                aria-expanded={vsOpen}
+              >
+                <span>
+                  Vs · #{ourName} vs #{enemyName}
+                </span>
+                <span className="chevron">{vsOpen ? '▾' : '▸'}</span>
+              </button>
+              {vsOpen && (
+                <div className="vs-row">
+                  <div className="vs-side vs-side--ally">
+                    <div>
+                      <span>наш альянс</span>
+                      <strong>#{ourName}</strong>
+                    </div>
+                  </div>
+                  <div className="vs-badge" aria-hidden>
+                    Vs
+                  </div>
+                  <div className="vs-side vs-side--enemy">
+                    <div>
+                      <span>противник</span>
+                      <strong>#{enemyName}</strong>
+                    </div>
                   </div>
                 </div>
-                <div className="vs-badge" aria-hidden>
-                  Vs
-                </div>
-                <div className="vs-side vs-side--enemy">
-                  <div>
-                    <span>противник</span>
-                    <strong>#{enemyName}</strong>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </section>
 
@@ -444,6 +458,8 @@ PlayerThree,15000000,right`}</pre>
                   enemy={enemy}
                   maxPerLane={settings.maxPerLane}
                   result={resultBefore}
+                  collapsible
+                  defaultOpen={false}
                 />
               </div>
               <div id="battles">

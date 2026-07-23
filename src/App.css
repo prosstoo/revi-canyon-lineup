@@ -1144,9 +1144,43 @@ th {
   border-color: color-mix(in srgb, var(--enemy) 45%, var(--border));
 }
 
+.collapsible-toggle__title {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.matchup-hint {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.arena-banner__toggle {
+  position: relative;
+  z-index: 2;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+
+.arena-banner--collapsed {
+  min-height: 0;
+}
+
+.arena-banner--collapsed .arena-banner__content {
+  padding: 0.65rem 1rem;
+}
+
+.row-win {
+  background: color-mix(in srgb, var(--ally-soft) 85%, transparent);
+}
+
+.row-win td {
+  border-bottom-color: color-mix(in srgb, var(--ally) 25%, var(--border));
+}
+
 .row-win td:first-child {
   color: var(--ally-bright);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .row-lose td:nth-child(4) {
