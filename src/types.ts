@@ -8,6 +8,13 @@ export const LANE_LABELS: Record<LaneId, string> = {
   right: 'Правая линия',
 }
 
+/** Наша линия → линия противника напротив (лево↔право, центр↔центр) */
+export const FACING_LANE: Record<LaneId, LaneId> = {
+  left: 'right',
+  center: 'center',
+  right: 'left',
+}
+
 export interface Player {
   id: string
   nick: string
@@ -17,65 +24,40 @@ export interface Player {
 export type LaneAssignment = Record<LaneId, Player[]>
 
 export interface BattleSettings {
-  /** Макс. игроков на одну линию */
   maxPerLane: number
-  /** Лимит боёв на отряд (2 — юнцы, 3 — элита+) */
   maxBattles: number
-  /**
-   * Коэффициент урона: остаток победителя = P_win - damageCoeff * P_lose.
-   * 1 = полная «взаимная» модель по мощи.
-   */
-  damageCoeff: number
 }
 
 export const DEFAULT_SETTINGS: BattleSettings = {
   maxPerLane: 15,
   maxBattles: 3,
-  damageCoeff: 1,
 }
 
-export type StrategyId =
-  | 'balance'
-  | 'mirror'
-  | 'twoStrong'
-  | 'pressureWeak'
-  | 'counterRelay'
-  | 'maximizeFlags'
+export type StrategyId = 'balance' | 'twoStrong' | 'counterRelay' | 'maximizeFlags'
 
-export const STRATEGY_META: Record<
-  StrategyId,
-  { title: string; description: string }
-> = {
+export const STRATEGY_META: Record<StrategyId, { title: string; description: string }> = {
   balance: {
     title: 'Баланс',
     description: 'Равномерно распределяет мощь по трём линиям.',
-  },
-  mirror: {
-    title: 'Зеркало',
-    description: 'Подгоняет суммы мощи линий под состав соперника.',
   },
   twoStrong: {
     title: '2 сильные + жертва',
     description: 'Усиливает две линии, третью оставляет слабой.',
   },
-  pressureWeak: {
-    title: 'Давление на слабую',
-    description: 'Складывает топов против самой слабой линии врага.',
-  },
   counterRelay: {
     title: 'Контр-эстафета',
     description:
-      'Жадно ставит игроков так, чтобы слабые снимали чужих слабых, топы добивали.',
+      'Подбирает игроков против линии напротив (наше право ↔ их лево).',
   },
   maximizeFlags: {
     title: 'Максимум флагов',
-    description:
-      'Перебирает назначения через симуляцию и ищет лучший прогноз по флагам.',
+    description: 'Ищет расстановку с лучшим прогнозом по флагам (с учётом зеркала линий).',
   },
 }
 
 export interface FightLogEntry {
   lane: LaneId
+  facingLane: LaneId
   oursNick: string
   oursPower: number
   theirsNick: string
@@ -86,6 +68,7 @@ export interface FightLogEntry {
 
 export interface LaneSimResult {
   lane: LaneId
+  facingLane: LaneId
   winner: 'us' | 'them' | 'draw'
   ourSurvivors: number
   theirSurvivors: number

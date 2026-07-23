@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { formatPower, parseOpponentFile, createPlayer } from '../lib/parseRoster'
-import { emptyLanes, lanePower } from '../lib/simulate'
+import { emptyLanes, lanePower, sortForDisplay, turnOrderNumber } from '../lib/simulate'
 import type { LaneAssignment, LaneId, Player } from '../types'
 import { LANE_IDS, LANE_LABELS } from '../types'
 
@@ -54,14 +54,21 @@ export function OpponentSetup({ enemy, onChange }: Props) {
     })
   }
 
+  function updatePower(l: LaneId, id: string, nextPower: number) {
+    onChange({
+      ...enemy,
+      [l]: enemy[l].map((p) => (p.id === id ? { ...p, power: nextPower } : p)),
+    })
+  }
+
   function clearLane(l: LaneId) {
     onChange({ ...enemy, [l]: [] })
   }
 
   return (
-    <section className="panel">
+    <section className="panel panel-equal">
       <header className="panel__head">
-        <h2>Соперник BDSM</h2>
+        <h2>Альянс BDSM</h2>
         <span className="tag tag--enemy">ник + мощь</span>
       </header>
 
@@ -85,8 +92,7 @@ export function OpponentSetup({ enemy, onChange }: Props) {
         </button>
       </div>
       <p className="hint">
-        Для файла со столбцом <code>линия</code> / <code>lane</code> значения: left/лево,
-        center/центр, right/право. Без столбца — всё попадёт на левую линию.
+        Столбец <code>lane</code>: left / center / right. Мощь можно править в таблице.
       </p>
 
       <div className="manual-add">
@@ -97,17 +103,9 @@ export function OpponentSetup({ enemy, onChange }: Props) {
             </option>
           ))}
         </select>
-        <input
-          placeholder="Ник"
-          value={nick}
-          onChange={(e) => setNick(e.target.value)}
-        />
-        <input
-          placeholder="Мощь"
-          value={power}
-          onChange={(e) => setPower(e.target.value)}
-        />
-        <button type="button" className="btn btn--secondary" onClick={addManual}>
+        <input placeholder="Ник" value={nick} onChange={(e) => setNick(e.target.value)} />
+        <input placeholder="Мощь" value={power} onChange={(e) => setPower(e.target.value)} />
+        <button type="button" className="btn btn-secondary" onClick={addManual}>
           Добавить
         </button>
       </div>
@@ -121,6 +119,7 @@ export function OpponentSetup({ enemy, onChange }: Props) {
             players={enemy[l]}
             onClear={() => clearLane(l)}
             onRemove={(id) => removePlayer(l, id)}
+            onEditPower={(id, pow) => updatePower(l, id, pow)}
           />
         ))}
       </div>
@@ -133,12 +132,15 @@ function EnemyLane({
   players,
   onClear,
   onRemove,
+  onEditPower,
 }: {
   lane: LaneId
   players: Player[]
   onClear: () => void
   onRemove: (id: string) => void
+  onEditPower: (id: string, power: number) => void
 }) {
+  const sorted = sortForDisplay(players)
   return (
     <div className="enemy-lane">
       <div className="enemy-lane__head">
@@ -151,18 +153,30 @@ function EnemyLane({
         </button>
       </div>
       <ul>
-        {[...players]
-          .sort((a, b) => a.power - b.power)
-          .map((p, i) => (
-            <li key={p.id}>
-              <span className="ord">{i + 1}.</span>
-              <span className="nick">{p.nick}</span>
-              <span className="pow">{formatPower(p.power)}</span>
-              <button type="button" className="btn btn--tiny" onClick={() => onRemove(p.id)}>
-                ×
-              </button>
-            </li>
-          ))}
+        {sorted.map((p, i) => (
+          <li key={p.id}>
+            <span className="ord">{turnOrderNumber(i, sorted.length)}.</span>
+            <span className="nick">{p.nick}</span>
+            <input
+              className="power-input"
+              type="text"
+              inputMode="numeric"
+              defaultValue={String(p.power)}
+              key={`${p.id}-${p.power}`}
+              onBlur={(e) => {
+                const n = Number(e.target.value.replace(/[\s\u00a0,]/g, ''))
+                if (Number.isFinite(n) && n > 0 && n !== p.power) {
+                  onEditPower(p.id, Math.round(n))
+                } else {
+                  e.target.value = String(p.power)
+                }
+              }}
+            />
+            <button type="button" className="btn btn--tiny" onClick={() => onRemove(p.id)}>
+              ×
+            </button>
+          </li>
+        ))}
       </ul>
     </div>
   )

@@ -33,7 +33,6 @@ export function RosterUpload({ title, allianceTag, players, onChange }: Props) {
     setError(null)
     const list = parseCsvText(paste)
     if (list.length === 0) {
-      // also support TSV / "nick power" lines
       const lines = paste
         .split(/\r?\n/)
         .map((l) => l.trim())
@@ -56,7 +55,9 @@ export function RosterUpload({ title, allianceTag, players, onChange }: Props) {
           }
           continue
         }
-        const power = Number(parts[parts.length - 1]!.replace(/[\s\u00a0]/g, '').replace(',', '.'))
+        const power = Number(
+          parts[parts.length - 1]!.replace(/[\s\u00a0]/g, '').replace(',', '.'),
+        )
         const nick = parts.slice(0, -1).join(' ')
         if (nick && Number.isFinite(power) && power > 0) {
           manual.push({
@@ -76,10 +77,15 @@ export function RosterUpload({ title, allianceTag, players, onChange }: Props) {
     onChange(list)
   }
 
+  function updatePower(id: string, power: number) {
+    onChange(players.map((p) => (p.id === id ? { ...p, power } : p)))
+  }
+
   const total = players.reduce((s, p) => s + p.power, 0)
+  const sorted = [...players].sort((a, b) => b.power - a.power)
 
   return (
-    <section className="panel">
+    <section className="panel panel-equal">
       <header className="panel__head">
         <h2>{title}</h2>
         <span className="tag">{allianceTag}</span>
@@ -111,11 +117,11 @@ export function RosterUpload({ title, allianceTag, players, onChange }: Props) {
         <textarea
           value={paste}
           onChange={(e) => setPaste(e.target.value)}
-          rows={4}
-          placeholder={'ник;мощь\nPlayerOne;18500000\nPlayerTwo;16200000'}
+          rows={3}
+          placeholder={'ник;мощь\nPlayerOne;18500000'}
         />
       </label>
-      <button type="button" className="btn btn--secondary" onClick={onPasteApply}>
+      <button type="button" className="btn btn-secondary" onClick={onPasteApply}>
         Применить вставку
       </button>
 
@@ -126,7 +132,7 @@ export function RosterUpload({ title, allianceTag, players, onChange }: Props) {
         {players.length > 0 && (
           <>
             {' '}
-            · суммарная мощь: <strong>{formatPower(total)}</strong>
+            · сумма: <strong>{formatPower(total)}</strong>
           </>
         )}
       </p>
@@ -136,21 +142,35 @@ export function RosterUpload({ title, allianceTag, players, onChange }: Props) {
           <table>
             <thead>
               <tr>
-                <th>#</th>
+                <th className="col-ord">Ход</th>
                 <th>Ник</th>
-                <th>Мощь</th>
+                <th className="col-pow">Мощь</th>
               </tr>
             </thead>
             <tbody>
-              {[...players]
-                .sort((a, b) => b.power - a.power)
-                .map((p, i) => (
-                  <tr key={p.id}>
-                    <td>{i + 1}</td>
-                    <td>{p.nick}</td>
-                    <td>{formatPower(p.power)}</td>
-                  </tr>
-                ))}
+              {sorted.map((p, i) => (
+                <tr key={p.id}>
+                  <td className="col-ord">{sorted.length - i}</td>
+                  <td>{p.nick}</td>
+                  <td className="col-pow">
+                    <input
+                      className="power-input"
+                      type="text"
+                      inputMode="numeric"
+                      defaultValue={String(p.power)}
+                      key={`${p.id}-${p.power}`}
+                      onBlur={(e) => {
+                        const n = Number(e.target.value.replace(/[\s\u00a0,]/g, ''))
+                        if (Number.isFinite(n) && n > 0 && n !== p.power) {
+                          updatePower(p.id, Math.round(n))
+                        } else {
+                          e.target.value = String(p.power)
+                        }
+                      }}
+                    />
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

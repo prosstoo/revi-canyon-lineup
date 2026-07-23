@@ -1,11 +1,9 @@
-import type { BattleSettings, StrategyId } from '../types'
+import type { StrategyId } from '../types'
 import { STRATEGY_META } from '../types'
 
 interface Props {
   strategy: StrategyId
   onStrategy: (s: StrategyId) => void
-  settings: BattleSettings
-  onSettings: (s: BattleSettings) => void
   onApply: () => void
   onExport: () => void
   busy?: boolean
@@ -16,8 +14,6 @@ const STRATEGY_IDS = Object.keys(STRATEGY_META) as StrategyId[]
 export function StrategyPanel({
   strategy,
   onStrategy,
-  settings,
-  onSettings,
   onApply,
   onExport,
   busy,
@@ -25,7 +21,8 @@ export function StrategyPanel({
   return (
     <section className="panel">
       <header className="panel__head">
-        <h2>Стратегия и настройки</h2>
+        <h2>Стратегия</h2>
+        <span className="tag">наше право ↔ их лево</span>
       </header>
 
       <div className="strategies">
@@ -41,49 +38,6 @@ export function StrategyPanel({
             <span className="strat__desc">{STRATEGY_META[id].description}</span>
           </label>
         ))}
-      </div>
-
-      <div className="settings-grid">
-        <label className="field">
-          <span>Макс. на линию</span>
-          <input
-            type="number"
-            min={1}
-            max={50}
-            value={settings.maxPerLane}
-            onChange={(e) =>
-              onSettings({ ...settings, maxPerLane: Number(e.target.value) || 15 })
-            }
-          />
-        </label>
-        <label className="field">
-          <span>Лимит боёв отряда</span>
-          <input
-            type="number"
-            min={1}
-            max={5}
-            value={settings.maxBattles}
-            onChange={(e) =>
-              onSettings({ ...settings, maxBattles: Number(e.target.value) || 3 })
-            }
-          />
-        </label>
-        <label className="field">
-          <span>Коэфф. урона (модель)</span>
-          <input
-            type="number"
-            min={0.1}
-            max={2}
-            step={0.05}
-            value={settings.damageCoeff}
-            onChange={(e) =>
-              onSettings({
-                ...settings,
-                damageCoeff: Number(e.target.value) || 1,
-              })
-            }
-          />
-        </label>
       </div>
 
       <div className="upload-row">

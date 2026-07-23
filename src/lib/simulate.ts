@@ -1,5 +1,12 @@
-import type { BattleSettings, FightLogEntry, LaneId, LaneSimResult, MatchSimResult, Player } from '../types'
-import { LANE_IDS } from '../types'
+import type {
+  BattleSettings,
+  FightLogEntry,
+  LaneId,
+  LaneSimResult,
+  MatchSimResult,
+  Player,
+} from '../types'
+import { FACING_LANE, LANE_IDS } from '../types'
 
 interface Fighter {
   nick: string
@@ -30,11 +37,11 @@ function countSurvivors(queue: Fighter[], startIndex: number): number {
 
 /**
  * Эстафетный бой на одной линии.
- * Порядок: от слабых к сильным. Победитель продолжает с остатком мощи.
- * Отряд выбывает после maxBattles боёв или при remaining <= 0.
+ * Бой идёт от слабых к сильным; в списках UI показываем от сильных (N) к слабым (1).
  */
 export function simulateLane(
   lane: LaneId,
+  facingLane: LaneId,
   ours: Player[],
   theirs: Player[],
   settings: BattleSettings,
@@ -69,6 +76,7 @@ export function simulateLane(
       b.battlesLeft -= 1
       fights.push({
         lane,
+        facingLane,
         oursNick: a.nick,
         oursPower: ourEffective,
         theirsNick: b.nick,
@@ -82,13 +90,14 @@ export function simulateLane(
     }
 
     if (ourEffective > theirEffective) {
-      const residual = Math.max(0, ourEffective - settings.damageCoeff * theirEffective)
+      const residual = Math.max(0, ourEffective - theirEffective)
       a.remaining = residual
       a.battlesLeft -= 1
       b.remaining = 0
       b.battlesLeft -= 1
       fights.push({
         lane,
+        facingLane,
         oursNick: a.nick,
         oursPower: ourEffective,
         theirsNick: b.nick,
@@ -99,13 +108,14 @@ export function simulateLane(
       ti += 1
       if (a.remaining <= 0 || a.battlesLeft <= 0) oi += 1
     } else {
-      const residual = Math.max(0, theirEffective - settings.damageCoeff * ourEffective)
+      const residual = Math.max(0, theirEffective - ourEffective)
       b.remaining = residual
       b.battlesLeft -= 1
       a.remaining = 0
       a.battlesLeft -= 1
       fights.push({
         lane,
+        facingLane,
         oursNick: a.nick,
         oursPower: ourEffective,
         theirsNick: b.nick,
@@ -134,9 +144,10 @@ export function simulateLane(
     winner = 'draw'
   }
 
-  return { lane, winner, ourSurvivors, theirSurvivors, fights }
+  return { lane, facingLane, winner, ourSurvivors, theirSurvivors, fights }
 }
 
+/** Наша левая бьётся с их правой, наша правая — с их левой, центр — с центром */
 export function simulateMatch(
   ours: Record<LaneId, Player[]>,
   theirs: Record<LaneId, Player[]>,
@@ -147,7 +158,14 @@ export function simulateMatch(
   let theirFlags = 0
 
   for (const lane of LANE_IDS) {
-    const result = simulateLane(lane, ours[lane] ?? [], theirs[lane] ?? [], settings)
+    const facing = FACING_LANE[lane]
+    const result = simulateLane(
+      lane,
+      facing,
+      ours[lane] ?? [],
+      theirs[facing] ?? [],
+      settings,
+    )
     lanes[lane] = result
     if (result.winner === 'us') ourFlags += 1
     else if (result.winner === 'them') theirFlags += 1
@@ -167,4 +185,13 @@ export function lanePower(players: Player[]): number {
 
 export function emptyLanes(): Record<LaneId, Player[]> {
   return { left: [], center: [], right: [] }
+}
+
+/** Сортировка для списков: сильные сверху, номер хода N…1 */
+export function sortForDisplay(players: Player[]): Player[] {
+  return [...players].sort((a, b) => b.power - a.power)
+}
+
+export function turnOrderNumber(indexFromStrong: number, total: number): number {
+  return total - indexFromStrong
 }

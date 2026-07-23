@@ -1,19 +1,20 @@
 import { formatPower } from '../lib/parseRoster'
 import type { MatchSimResult } from '../types'
-import { LANE_IDS, LANE_LABELS } from '../types'
+import { FACING_LANE, LANE_IDS, LANE_LABELS } from '../types'
 
 interface Props {
   result: MatchSimResult | null
+  title?: string
 }
 
-export function SimResults({ result }: Props) {
+export function SimResults({ result, title = 'Прогноз боёв' }: Props) {
   if (!result) {
     return (
       <section className="panel">
         <header className="panel__head">
-          <h2>Прогноз боя</h2>
+          <h2>{title}</h2>
         </header>
-        <p className="hint">Загрузите ростеры и нажмите «Рассчитать расстановку».</p>
+        <p className="hint">Нажмите «Рассчитать расстановку».</p>
       </section>
     )
   }
@@ -26,9 +27,9 @@ export function SimResults({ result }: Props) {
         : 'Ничья'
 
   return (
-    <section className="panel panel--wide">
+    <section className="panel">
       <header className="panel__head">
-        <h2>Прогноз боя</h2>
+        <h2>{title}</h2>
         <span
           className={`tag ${
             result.outcome === 'win'
@@ -45,12 +46,14 @@ export function SimResults({ result }: Props) {
       <div className="sim-lanes">
         {LANE_IDS.map((lane) => {
           const r = result.lanes[lane]
+          const facing = r.facingLane ?? FACING_LANE[lane]
           const w =
-            r.winner === 'us' ? 'REVI' : r.winner === 'them' ? 'враг' : 'ничья'
+            r.winner === 'us' ? 'REVI' : r.winner === 'them' ? 'BDSM' : 'ничья'
           return (
             <div key={lane} className={`sim-lane sim-lane--${r.winner}`}>
               <h3>
-                {LANE_LABELS[lane]} — {w}
+                Наша {LANE_LABELS[lane].toLowerCase()} vs их{' '}
+                {LANE_LABELS[facing].toLowerCase()} — {w}
               </h3>
               <p className="meta">
                 Выжившие: мы {r.ourSurvivors} / враг {r.theirSurvivors} · дуэлей:{' '}
@@ -63,14 +66,17 @@ export function SimResults({ result }: Props) {
                       <th>REVI</th>
                       <th>Мощь</th>
                       <th></th>
-                      <th>Враг</th>
+                      <th>BDSM</th>
                       <th>Мощь</th>
                       <th>Остаток</th>
                     </tr>
                   </thead>
                   <tbody>
                     {r.fights.map((f, i) => (
-                      <tr key={`${lane}-${i}`} className={f.winner === 'us' ? 'row-win' : 'row-lose'}>
+                      <tr
+                        key={`${lane}-${i}`}
+                        className={f.winner === 'us' ? 'row-win' : 'row-lose'}
+                      >
                         <td>{f.oursNick}</td>
                         <td>{formatPower(f.oursPower)}</td>
                         <td>{f.winner === 'us' ? '▶' : '◀'}</td>
