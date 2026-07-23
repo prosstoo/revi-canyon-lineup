@@ -132,9 +132,7 @@ export default function App() {
       setNoPerfectNote(null)
     } else if (strategy === 'maximizeFlags') {
       setNoPerfectNote(
-        after.ourFlags < 3
-          ? `Вариант 3:0 для текущего состава не найден (лучший прогноз ${after.ourFlags}:${after.theirFlags}).`
-          : null,
+        `Вариант 3:0 для текущего состава не найден (лучший прогноз ${after.ourFlags}:${after.theirFlags}).`,
       )
     } else {
       setNoPerfectNote(null)
