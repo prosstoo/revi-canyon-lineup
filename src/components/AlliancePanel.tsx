@@ -17,9 +17,9 @@ interface Props {
   onChange: (lanes: LaneAssignment) => void
   maxFight?: number
   accent: 'ally' | 'enemy'
+  allowLaneSwap?: boolean
 }
 
-/** Одинаковая панель для обоих альянсов */
 export function AlliancePanel({
   name,
   onNameChange,
@@ -27,6 +27,7 @@ export function AlliancePanel({
   onChange,
   maxFight = 15,
   accent,
+  allowLaneSwap = false,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [lane, setLane] = useState<LaneId>('left')
@@ -34,6 +35,11 @@ export function AlliancePanel({
   const [power, setPower] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
+
+  function swapLanes(a: LaneId, b: LaneId) {
+    if (a === b) return
+    onChange({ ...lanes, [a]: lanes[b], [b]: lanes[a] })
+  }
 
   async function onFile(file: File | null) {
     if (!file) return
@@ -123,11 +129,7 @@ export function AlliancePanel({
         >
           {showAdd ? 'Скрыть добавление' : 'Добавить игрока'}
         </button>
-        <button
-          type="button"
-          className="btn btn--ghost"
-          onClick={() => onChange(emptyLanes())}
-        >
+        <button type="button" className="btn btn--ghost" onClick={() => onChange(emptyLanes())}>
           Очистить
         </button>
       </div>
@@ -141,16 +143,8 @@ export function AlliancePanel({
               </option>
             ))}
           </select>
-          <input
-            placeholder="Ник"
-            value={nick}
-            onChange={(e) => setNick(e.target.value)}
-          />
-          <input
-            placeholder="Мощь"
-            value={power}
-            onChange={(e) => setPower(e.target.value)}
-          />
+          <input placeholder="Ник" value={nick} onChange={(e) => setNick(e.target.value)} />
+          <input placeholder="Мощь" value={power} onChange={(e) => setPower(e.target.value)} />
           <button type="button" className="btn btn-secondary" onClick={addManual}>
             Добавить
           </button>
@@ -160,9 +154,23 @@ export function AlliancePanel({
       {error && <p className="error">{error}</p>}
 
       <p className="meta">
-        Всего: <strong>{total}</strong> · в бою (топ-{maxFight}/линия):{' '}
-        <strong>{fightTotal}</strong>
+        Всего: <strong>{total}</strong> · в бою (топ-{maxFight}/линия): <strong>{fightTotal}</strong>
       </p>
+
+      {allowLaneSwap && (
+        <div className="lane-swap-bar">
+          <span className="lane-swap-label">Линии местами</span>
+          <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('left', 'center')}>
+            Л ↔ Ц
+          </button>
+          <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('center', 'right')}>
+            Ц ↔ П
+          </button>
+          <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('left', 'right')}>
+            Л ↔ П
+          </button>
+        </div>
+      )}
 
       <div className="lane-editors">
         {LANE_IDS.map((l) => (
@@ -171,10 +179,12 @@ export function AlliancePanel({
             lane={l}
             players={lanes[l]}
             maxFight={maxFight}
+            allowLaneSwap={allowLaneSwap}
             onClear={() => onChange({ ...lanes, [l]: [] })}
             onRemove={(id) => removePlayer(l, id)}
             onEditPower={(id, pow) => updatePower(l, id, pow)}
             onMoveTo={(id, to) => movePlayer(id, l, to)}
+            onSwapWith={(other) => swapLanes(l, other)}
           />
         ))}
       </div>
@@ -186,23 +196,28 @@ function LaneEditor({
   lane,
   players,
   maxFight,
+  allowLaneSwap,
   onClear,
   onRemove,
   onEditPower,
   onMoveTo,
+  onSwapWith,
 }: {
   lane: LaneId
   players: Player[]
   maxFight: number
+  allowLaneSwap: boolean
   onClear: () => void
   onRemove: (id: string) => void
   onEditPower: (id: string, power: number) => void
   onMoveTo: (id: string, to: LaneId) => void
+  onSwapWith: (other: LaneId) => void
 }) {
   const sorted = sortForDisplay(players)
   const fighters = sortForDisplay(topFighters(players, maxFight))
   const fightingIds = new Set(fighters.map((p) => p.id))
   const overflow = players.length > maxFight
+  const others = LANE_IDS.filter((x) => x !== lane)
 
   return (
     <div
@@ -216,12 +231,29 @@ function LaneEditor({
       }}
     >
       <div className="lane-editor__head">
-        <h3>{LANE_LABELS[lane]}</h3>
+        <h3>
+          <span className={`lane-mark lane-mark--${lane}`} aria-hidden />
+          {LANE_LABELS[lane]}
+        </h3>
         <span>
           {players.length}
-          {overflow ? ` (бой: ${maxFight})` : ''} ·{' '}
-          {formatPower(lanePower(fighters))}
+          {overflow ? ` (бой: ${maxFight})` : ''} · {formatPower(lanePower(fighters))}
         </span>
+        {allowLaneSwap && (
+          <div className="lane-head-swaps">
+            {others.map((o) => (
+              <button
+                key={o}
+                type="button"
+                className="btn btn--tiny"
+                title={`Поменять с: ${LANE_LABELS[o]}`}
+                onClick={() => onSwapWith(o)}
+              >
+                ↔ {o === 'left' ? 'Л' : o === 'center' ? 'Ц' : 'П'}
+              </button>
+            ))}
+          </div>
+        )}
         <button type="button" className="btn btn--tiny" onClick={onClear}>
           очистить
         </button>
@@ -279,9 +311,7 @@ function LaneEditor({
         })}
       </ul>
       {overflow && (
-        <p className="hint tiny">
-          Серым — запас: в бой идут только {maxFight} самых сильных.
-        </p>
+        <p className="hint tiny">Серым — запас: в бой идут только {maxFight} самых сильных.</p>
       )}
     </div>
   )

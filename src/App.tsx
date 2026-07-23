@@ -286,20 +286,23 @@ export default function App() {
           </section>
 
           <section className="arena-banner" id="vs">
-            <div className="vs-row">
-              <div className="vs-side vs-side--ally">
-                <div>
-                  <span>наш альянс</span>
-                  <strong>#{ourName}</strong>
+            <div className="arena-banner__art" aria-hidden />
+            <div className="arena-banner__content">
+              <div className="vs-row">
+                <div className="vs-side vs-side--ally">
+                  <div>
+                    <span>наш альянс</span>
+                    <strong>#{ourName}</strong>
+                  </div>
                 </div>
-              </div>
-              <div className="vs-badge" aria-hidden>
-                Vs
-              </div>
-              <div className="vs-side vs-side--enemy">
-                <div>
-                  <span>противник</span>
-                  <strong>#{enemyName}</strong>
+                <div className="vs-badge" aria-hidden>
+                  Vs
+                </div>
+                <div className="vs-side vs-side--enemy">
+                  <div>
+                    <span>противник</span>
+                    <strong>#{enemyName}</strong>
+                  </div>
                 </div>
               </div>
             </div>
@@ -342,6 +345,7 @@ PlayerThree,15000000,right`}</pre>
               lanes={revi}
               onChange={handleReviChange}
               maxFight={settings.maxPerLane}
+              allowLaneSwap
             />
             <AlliancePanel
               name={enemyName}

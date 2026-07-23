@@ -582,12 +582,126 @@ textarea {
 }
 
 .arena-banner {
+  position: relative;
+  overflow: hidden;
   margin-bottom: 1rem;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--surface);
-  box-shadow: var(--shadow);
-  padding: 1rem;
+  box-shadow: var(--shadow-raised);
+  min-height: 140px;
+}
+
+.arena-banner__art {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 21, 32, 0.35) 0%, rgba(11, 21, 32, 0.72) 100%),
+    url('./canyon-hero.png') center / cover no-repeat;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+[data-theme='light'] .arena-banner__art {
+  background:
+    linear-gradient(180deg, rgba(229, 240, 250, 0.55) 0%, rgba(255, 255, 255, 0.82) 100%),
+    url('./canyon-hero.png') center / cover no-repeat;
+  opacity: 1;
+  filter: saturate(0.85) brightness(1.05);
+}
+
+.arena-banner__content {
+  position: relative;
+  z-index: 1;
+  padding: 1.15rem 1rem;
+}
+
+.lane-swap-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+
+.lane-swap-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-right: 0.25rem;
+}
+
+.lane-swap-btn {
+  font-size: 0.8rem !important;
+  padding: 0.35rem 0.65rem !important;
+}
+
+.lane-head-swaps {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.lane-mark {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.lane-mark--left {
+  background: var(--ally);
+  color: var(--ally);
+}
+
+.lane-mark--center {
+  background: var(--gold);
+  color: var(--gold);
+}
+
+.lane-mark--right {
+  background: var(--enemy);
+  color: var(--enemy);
+}
+
+.lane-editor {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lane-editor:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: 0 2px 12px rgba(30, 64, 120, 0.08);
+}
+
+.alliance-panel--ally .lane-editor:hover {
+  border-color: color-mix(in srgb, var(--ally) 45%, var(--border));
+}
+
+.panel {
+  transition: box-shadow 0.2s ease;
+}
+
+.side-nav-item {
+  transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+.side-nav-item:active {
+  transform: scale(0.98);
+}
+
+.vs-badge {
+  transition: transform 0.2s ease;
+}
+
+.arena-banner:hover .vs-badge {
+  transform: scale(1.04);
 }
 
 .vs-row {
