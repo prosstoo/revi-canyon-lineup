@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { EnemyLineupView, LineupResult } from './components/LineupResult'
 import { OpponentSetup } from './components/OpponentSetup'
 import { RosterUpload } from './components/RosterUpload'
@@ -7,8 +7,10 @@ import { StrategyPanel } from './components/StrategyPanel'
 import { assignmentToCsv } from './lib/parseRoster'
 import {
   DEMO_NOTE,
+  makeDemoOurAssignment,
   makeSampleEnemy,
   makeSampleReviRoster,
+  makeSetupEnemy,
 } from './lib/sampleData'
 import { emptyLanes, simulateMatch } from './lib/simulate'
 import { applyStrategy } from './lib/strategies'
@@ -31,7 +33,8 @@ export default function App() {
   const [settings, setSettings] = useState<BattleSettings>(DEFAULT_SETTINGS)
   const [result, setResult] = useState<MatchSimResult | null>(null)
   const [demoNote, setDemoNote] = useState<string | null>(null)
-  const [section, setSection] = useState<'setup' | 'result' | 'battle'>('setup')
+  const [section, setSection] = useState<'setup' | 'result' | 'battle'>('result')
+  const [enemySource, setEnemySource] = useState<'battles' | 'setup'>('battles')
 
   const assignedIds = useMemo(() => {
     const s = new Set<string>()
@@ -45,6 +48,15 @@ export default function App() {
     () => roster.filter((p) => !assignedIds.has(p.id)),
     [roster, assignedIds],
   )
+
+  function applyEnemySource(source: 'battles' | 'setup') {
+    setEnemySource(source)
+    const next = source === 'battles' ? makeSampleEnemy() : makeSetupEnemy()
+    setEnemy(next)
+    if (LANE_IDS.some((l) => assignment[l].length > 0)) {
+      setResult(simulateMatch(assignment, next, settings))
+    }
+  }
 
   function handleRosterChange(players: Player[]) {
     setRoster(players)
@@ -65,6 +77,7 @@ export default function App() {
     setAssignment(next)
     setResult(simulateMatch(next, enemy, settings))
     setSection('result')
+    setDemoNote(null)
   }
 
   function handleMoveBetweenLanes(playerId: string, from: LaneId, to: LaneId) {
@@ -94,17 +107,24 @@ export default function App() {
   }
 
   function loadDemo() {
-    const revi = makeSampleReviRoster()
     const bdsm = makeSampleEnemy()
-    setRoster(revi)
+    const ours = makeDemoOurAssignment()
+    const flat = makeSampleReviRoster()
+    setEnemySource('battles')
     setEnemy(bdsm)
+    setRoster(flat)
+    setAssignment(ours)
     setDemoNote(DEMO_NOTE)
-    const next = applyStrategy('maximizeFlags', revi, bdsm, settings)
-    setAssignment(next)
     setStrategy('maximizeFlags')
-    setResult(simulateMatch(next, bdsm, settings))
+    setResult(simulateMatch(ours, bdsm, settings))
     setSection('result')
   }
+
+  // Сразу показываем демо со скринов при первом открытии
+  useEffect(() => {
+    loadDemo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="app-shell">
@@ -124,13 +144,6 @@ export default function App() {
         <nav className="side-nav-menu">
           <button
             type="button"
-            className={`side-nav-item ${section === 'setup' ? 'is-active' : ''}`}
-            onClick={() => setSection('setup')}
-          >
-            Данные
-          </button>
-          <button
-            type="button"
             className={`side-nav-item ${section === 'result' ? 'is-active' : ''}`}
             onClick={() => setSection('result')}
           >
@@ -142,6 +155,13 @@ export default function App() {
             onClick={() => setSection('battle')}
           >
             Бои
+          </button>
+          <button
+            type="button"
+            className={`side-nav-item ${section === 'setup' ? 'is-active' : ''}`}
+            onClick={() => setSection('setup')}
+          >
+            Данные
           </button>
         </nav>
         <button type="button" className="btn btn-secondary side-nav-demo" onClick={loadDemo}>
@@ -156,8 +176,7 @@ export default function App() {
               <p className="eyebrow">Альянс REVI</p>
               <h1>Завоевание каньона</h1>
               <p className="lead">
-                Расстановка игроков по трём линиям: на выходе — ник и мощь (БМ), как в
-                игре.
+                Итог — три линии: ник и мощь. Соперник BDSM подставлен со скринов.
               </p>
             </div>
             <button type="button" className="btn btn-primary" onClick={loadDemo}>
@@ -167,45 +186,43 @@ export default function App() {
 
           {demoNote && <div className="toast-note">{demoNote}</div>}
 
-          {(section === 'setup' || section === 'result') && (
-            <>
-              {section === 'setup' && (
-                <div className="grid-2">
-                  <RosterUpload
-                    title="Ростер REVI"
-                    allianceTag="REVI"
-                    players={roster}
-                    onChange={handleRosterChange}
-                  />
-                  <OpponentSetup enemy={enemy} onChange={handleEnemyChange} />
-                </div>
-              )}
+          {(section === 'result' || section === 'setup') && (
+            <div className="enemy-source-bar">
+              <span>Источник BDSM:</span>
+              <button
+                type="button"
+                className={`btn ${enemySource === 'battles' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => applyEnemySource('battles')}
+              >
+                Боевые отчёты (r0yal666…)
+              </button>
+              <button
+                type="button"
+                className={`btn ${enemySource === 'setup' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => applyEnemySource('setup')}
+              >
+                Расстановка (SenjorTomato…)
+              </button>
+            </div>
+          )}
 
-              {section === 'setup' && (
-                <StrategyPanel
-                  strategy={strategy}
-                  onStrategy={setStrategy}
-                  settings={settings}
-                  onSettings={(s) => {
-                    setSettings(s)
-                    if (LANE_IDS.some((l) => assignment[l].length > 0)) {
-                      setResult(simulateMatch(assignment, enemy, s))
-                    }
-                  }}
-                  onApply={handleApply}
-                  onExport={handleExport}
-                />
-              )}
+          {section === 'result' && (
+            <>
+              <EnemyLineupView enemy={enemy} />
 
               <LineupResult
                 assignment={assignment}
+                allianceTag={demoNote ? 'пример LMB' : 'REVI'}
+                title={
+                  demoNote
+                    ? 'Наша сторона в демо (LMB со скринов — замените на REVI)'
+                    : 'Расстановка REVI'
+                }
                 maxPerLane={settings.maxPerLane}
                 onMove={handleMoveBetweenLanes}
               />
 
-              {section === 'result' && <EnemyLineupView enemy={enemy} />}
-
-              {unassigned.length > 0 && section === 'result' && (
+              {unassigned.length > 0 && (
                 <section className="panel">
                   <div className="panel-head">
                     <h2>Не на линии</h2>
@@ -224,15 +241,46 @@ export default function App() {
                         .map((p) => (
                           <tr key={p.id}>
                             <td>{p.nick}</td>
-                            <td className="col-pow">
-                              {p.power.toLocaleString('ru-RU')}
-                            </td>
+                            <td className="col-pow">{p.power.toLocaleString('ru-RU')}</td>
                           </tr>
                         ))}
                     </tbody>
                   </table>
                 </section>
               )}
+            </>
+          )}
+
+          {section === 'setup' && (
+            <>
+              <div className="grid-2">
+                <RosterUpload
+                  title="Ростер REVI"
+                  allianceTag="REVI"
+                  players={roster}
+                  onChange={handleRosterChange}
+                />
+                <OpponentSetup enemy={enemy} onChange={handleEnemyChange} />
+              </div>
+              <StrategyPanel
+                strategy={strategy}
+                onStrategy={setStrategy}
+                settings={settings}
+                onSettings={(s) => {
+                  setSettings(s)
+                  if (LANE_IDS.some((l) => assignment[l].length > 0)) {
+                    setResult(simulateMatch(assignment, enemy, s))
+                  }
+                }}
+                onApply={handleApply}
+                onExport={handleExport}
+              />
+              <EnemyLineupView enemy={enemy} />
+              <LineupResult
+                assignment={assignment}
+                maxPerLane={settings.maxPerLane}
+                onMove={handleMoveBetweenLanes}
+              />
             </>
           )}
 

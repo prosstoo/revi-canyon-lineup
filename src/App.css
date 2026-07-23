@@ -527,6 +527,26 @@ th {
   margin-bottom: 0.75rem;
 }
 
+.enemy-source-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.enemy-source-bar span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
 .result-panel {
   box-shadow: var(--shadow-raised);
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
