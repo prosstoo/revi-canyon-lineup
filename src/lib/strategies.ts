@@ -112,62 +112,6 @@ function strategyTwoStrong(
   return sortLanes(out)
 }
 
-function strategyCounterRelay(
-  players: Player[],
-  enemy: LaneAssignment,
-  settings: BattleSettings,
-): LaneAssignment {
-  const hasEnemy = LANE_IDS.some((l) => enemy[l].length > 0)
-  if (!hasEnemy) return strategyBalance(players, settings)
-
-  const pool = [...players].sort(byPowerAsc)
-  const used = new Set<string>()
-  const out = emptyLanes()
-
-  for (const ourLane of LANE_IDS) {
-    const enemySorted = [...enemyFacingOur(ourLane, enemy)].sort(byPowerAsc)
-    for (const foe of enemySorted) {
-      if (out[ourLane].length >= settings.maxPerLane) break
-      let pick: Player | null = null
-      for (const p of pool) {
-        if (used.has(p.id)) continue
-        if (p.power > foe.power) {
-          pick = p
-          break
-        }
-      }
-      if (!pick) {
-        for (let i = pool.length - 1; i >= 0; i--) {
-          const p = pool[i]!
-          if (!used.has(p.id)) {
-            pick = p
-            break
-          }
-        }
-      }
-      if (pick) {
-        used.add(pick.id)
-        out[ourLane].push(pick)
-      }
-    }
-  }
-
-  const leftover = pool.filter((p) => !used.has(p.id)).sort(byPowerDesc)
-  for (const p of leftover) {
-    let best: LaneId = LANE_IDS[0]!
-    let bestSum = Infinity
-    for (const lane of LANE_IDS) {
-      if (out[lane].length >= settings.maxPerLane) continue
-      const s = lanePower(out[lane])
-      if (s < bestSum) {
-        bestSum = s
-        best = lane
-      }
-    }
-    out[best].push(p)
-  }
-  return sortLanes(out)
-}
 
 /**
  * Жадно закрывает цели по мощи: сначала самую опасную линию врага,
@@ -425,7 +369,6 @@ function strategyMaximizeFlags(
   const seeds: LaneAssignment[] = [
     strategyBalance(players, settings),
     strategyTwoStrong(players, enemy, settings),
-    strategyCounterRelay(players, enemy, settings),
     strategyCoverTargets(players, enemy, settings, 'dangerFirst'),
     strategyCoverTargets(players, enemy, settings, 'weakFirst'),
   ]
@@ -489,8 +432,6 @@ export function applyStrategy(
       return strategyBalance(players, settings)
     case 'twoStrong':
       return strategyTwoStrong(players, enemy, settings)
-    case 'counterRelay':
-      return strategyCounterRelay(players, enemy, settings)
     case 'maximizeFlags':
       return strategyMaximizeFlags(players, enemy, settings)
     default:

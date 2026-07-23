@@ -33,7 +33,7 @@ export const DEFAULT_SETTINGS: BattleSettings = {
   maxBattles: 3,
 }
 
-export type StrategyId = 'balance' | 'twoStrong' | 'counterRelay' | 'maximizeFlags'
+export type StrategyId = 'balance' | 'twoStrong' | 'maximizeFlags'
 
 export const STRATEGY_META: Record<StrategyId, { title: string; description: string }> = {
   balance: {
@@ -43,11 +43,6 @@ export const STRATEGY_META: Record<StrategyId, { title: string; description: str
   twoStrong: {
     title: '2 сильные + жертва',
     description: 'Усиливает две линии, третью оставляет слабой.',
-  },
-  counterRelay: {
-    title: 'Контр-эстафета',
-    description:
-      'Подбирает игроков против линии напротив (наше право ↔ их лево).',
   },
   maximizeFlags: {
     title: 'Максимум флагов',

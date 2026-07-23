@@ -15,7 +15,6 @@ import { lanePower, simulateMatch, sortForDisplay } from '../src/lib/simulate'
 const STRATEGIES: StrategyId[] = [
   'balance',
   'twoStrong',
-  'counterRelay',
   'maximizeFlags',
 ]
 
