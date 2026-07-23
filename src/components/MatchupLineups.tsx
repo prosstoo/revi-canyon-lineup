@@ -177,7 +177,7 @@ function LaneMiniTable({
           {formatPower(lanePower(players))}
         </span>
       </div>
-      <div className="matchup-table-wrap">
+      <div className="matchup-table-wrap matchup-table-wrap--full">
         <table>
           <thead>
             <tr>

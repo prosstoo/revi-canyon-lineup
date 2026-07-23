@@ -132,6 +132,20 @@ export function AlliancePanel({
         <button type="button" className="btn btn--ghost" onClick={() => onChange(emptyLanes())}>
           Очистить
         </button>
+        {allowLaneSwap && (
+          <div className="lane-swap-inline" role="group" aria-label="Линии местами">
+            <span className="lane-swap-label">Линии местами</span>
+            <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('left', 'center')}>
+              Л ↔ Ц
+            </button>
+            <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('center', 'right')}>
+              Ц ↔ П
+            </button>
+            <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('left', 'right')}>
+              Л ↔ П
+            </button>
+          </div>
+        )}
       </div>
 
       {showAdd && (
@@ -156,21 +170,6 @@ export function AlliancePanel({
       <p className="meta">
         Всего: <strong>{total}</strong> · в бою (топ-{maxFight}/линия): <strong>{fightTotal}</strong>
       </p>
-
-      {allowLaneSwap && (
-        <div className="lane-swap-bar">
-          <span className="lane-swap-label">Линии местами</span>
-          <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('left', 'center')}>
-            Л ↔ Ц
-          </button>
-          <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('center', 'right')}>
-            Ц ↔ П
-          </button>
-          <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('left', 'right')}>
-            Л ↔ П
-          </button>
-        </div>
-      )}
 
       <div className="lane-editors">
         {LANE_IDS.map((l) => (

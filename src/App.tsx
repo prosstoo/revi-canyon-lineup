@@ -74,6 +74,8 @@ export default function App() {
   const [rulesOpen, setRulesOpen] = useState(false)
   const [formatOpen, setFormatOpen] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
+  type NavId = (typeof NAV)[number]['id']
+  const [activeNav, setActiveNav] = useState<NavId>(NAV[0].id)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
       return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'
@@ -90,6 +92,26 @@ export default function App() {
       /* ignore */
     }
   }, [theme])
+
+  useEffect(() => {
+    function updateActiveNav() {
+      const offset = 96
+      let current: NavId = NAV[0].id
+      for (const item of NAV) {
+        const el = document.getElementById(item.id)
+        if (!el) continue
+        if (el.getBoundingClientRect().top - offset <= 0) current = item.id
+      }
+      setActiveNav(current)
+    }
+    updateActiveNav()
+    window.addEventListener('scroll', updateActiveNav, { passive: true })
+    window.addEventListener('resize', updateActiveNav)
+    return () => {
+      window.removeEventListener('scroll', updateActiveNav)
+      window.removeEventListener('resize', updateActiveNav)
+    }
+  }, [hasCalculated])
 
   function resim(
     nextAssign: LaneAssignment,
@@ -216,9 +238,11 @@ export default function App() {
             <button
               key={item.id}
               type="button"
-              className="side-nav-item"
+              className={`side-nav-item${activeNav === item.id ? ' is-active' : ''}`}
+              aria-current={activeNav === item.id ? 'true' : undefined}
               onClick={() => {
                 scrollToId(item.id)
+                setActiveNav(item.id)
                 setNavOpen(false)
               }}
             >

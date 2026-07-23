@@ -70,7 +70,7 @@ export function SimResults({
                 Выжившие: мы {r.ourSurvivors} / враг {r.theirSurvivors} · дуэлей:{' '}
                 {r.fights.length}
               </p>
-              <div className="table-wrap table-wrap--compact">
+              <div className="table-wrap table-wrap--full">
                 <table>
                   <thead>
                     <tr>
