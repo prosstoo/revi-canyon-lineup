@@ -135,7 +135,7 @@ export function AlliancePanel({
         {allowLaneSwap && (
           <>
             <span className="upload-row-spacer" aria-hidden />
-            <span className="lane-swap-label">Линии местами</span>
+            <span className="lane-swap-label">Линии</span>
             <button type="button" className="btn lane-swap-btn" onClick={() => swapLanes('left', 'center')}>
               Л ↔ Ц
             </button>
