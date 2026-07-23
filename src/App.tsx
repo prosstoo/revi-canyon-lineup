@@ -7,10 +7,9 @@ import { StrategyPanel } from './components/StrategyPanel'
 import { assignmentToCsv } from './lib/parseRoster'
 import {
   DEMO_NOTE,
-  makeDemoOurAssignment,
-  makeSampleEnemy,
-  makeSampleReviRoster,
-  makeSetupEnemy,
+  makeBdsmEnemy,
+  makeReviCurrentAssignment,
+  makeReviRoster,
 } from './lib/sampleData'
 import { emptyLanes, simulateMatch } from './lib/simulate'
 import { applyStrategy } from './lib/strategies'
@@ -25,16 +24,22 @@ import type {
 import { DEFAULT_SETTINGS, LANE_IDS } from './types'
 import './App.css'
 
+function flatFromAssignment(a: LaneAssignment): Player[] {
+  return LANE_IDS.flatMap((l) => a[l])
+}
+
 export default function App() {
   const [roster, setRoster] = useState<Player[]>([])
-  const [enemy, setEnemy] = useState<LaneAssignment>(() => makeSampleEnemy())
-  const [assignment, setAssignment] = useState<LaneAssignment>(emptyLanes())
+  const [enemy, setEnemy] = useState<LaneAssignment>(() => makeBdsmEnemy())
+  const [currentAssignment, setCurrentAssignment] =
+    useState<LaneAssignment>(emptyLanes)
+  const [assignment, setAssignment] = useState<LaneAssignment>(emptyLanes)
   const [strategy, setStrategy] = useState<StrategyId>('maximizeFlags')
   const [settings, setSettings] = useState<BattleSettings>(DEFAULT_SETTINGS)
+  const [resultBefore, setResultBefore] = useState<MatchSimResult | null>(null)
   const [result, setResult] = useState<MatchSimResult | null>(null)
   const [demoNote, setDemoNote] = useState<string | null>(null)
   const [section, setSection] = useState<'setup' | 'result' | 'battle'>('result')
-  const [enemySource, setEnemySource] = useState<'battles' | 'setup'>('battles')
 
   const assignedIds = useMemo(() => {
     const s = new Set<string>()
@@ -49,35 +54,41 @@ export default function App() {
     [roster, assignedIds],
   )
 
-  function applyEnemySource(source: 'battles' | 'setup') {
-    setEnemySource(source)
-    const next = source === 'battles' ? makeSampleEnemy() : makeSetupEnemy()
-    setEnemy(next)
-    if (LANE_IDS.some((l) => assignment[l].length > 0)) {
-      setResult(simulateMatch(assignment, next, settings))
-    }
-  }
-
   function handleRosterChange(players: Player[]) {
     setRoster(players)
+    setCurrentAssignment(emptyLanes())
     setAssignment(emptyLanes())
     setResult(null)
+    setResultBefore(null)
     setDemoNote(null)
   }
 
   function handleEnemyChange(next: LaneAssignment) {
     setEnemy(next)
-    const hasAssigned = LANE_IDS.some((l) => assignment[l].length > 0)
-    if (hasAssigned) setResult(simulateMatch(assignment, next, settings))
+    if (LANE_IDS.some((l) => assignment[l].length > 0)) {
+      setResult(simulateMatch(assignment, next, settings))
+    }
+    if (LANE_IDS.some((l) => currentAssignment[l].length > 0)) {
+      setResultBefore(simulateMatch(currentAssignment, next, settings))
+    }
+  }
+
+  function optimize(players: Player[], vs: LaneAssignment, current: LaneAssignment) {
+    const before =
+      LANE_IDS.some((l) => current[l].length > 0)
+        ? simulateMatch(current, vs, settings)
+        : null
+    setResultBefore(before)
+    const next = applyStrategy(strategy, players, vs, settings)
+    setAssignment(next)
+    setResult(simulateMatch(next, vs, settings))
+    setSection('result')
   }
 
   function handleApply() {
     if (roster.length === 0) return
-    const next = applyStrategy(strategy, roster, enemy, settings)
-    setAssignment(next)
-    setResult(simulateMatch(next, enemy, settings))
-    setSection('result')
     setDemoNote(null)
+    optimize(roster, enemy, currentAssignment)
   }
 
   function handleMoveBetweenLanes(playerId: string, from: LaneId, to: LaneId) {
@@ -107,24 +118,34 @@ export default function App() {
   }
 
   function loadDemo() {
-    const bdsm = makeSampleEnemy()
-    const ours = makeDemoOurAssignment()
-    const flat = makeSampleReviRoster()
-    setEnemySource('battles')
+    const bdsm = makeBdsmEnemy()
+    const reviNow = makeReviCurrentAssignment()
+    const players = makeReviRoster()
     setEnemy(bdsm)
-    setRoster(flat)
-    setAssignment(ours)
+    setRoster(players)
+    setCurrentAssignment(reviNow)
     setDemoNote(DEMO_NOTE)
     setStrategy('maximizeFlags')
-    setResult(simulateMatch(ours, bdsm, settings))
+    const before = simulateMatch(reviNow, bdsm, settings)
+    setResultBefore(before)
+    const optimized = applyStrategy('maximizeFlags', players, bdsm, settings)
+    setAssignment(optimized)
+    setResult(simulateMatch(optimized, bdsm, settings))
     setSection('result')
   }
 
-  // Сразу показываем демо со скринов при первом открытии
   useEffect(() => {
     loadDemo()
+    // только при монтировании
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const outcomeLabel = (r: MatchSimResult | null) => {
+    if (!r) return '—'
+    if (r.outcome === 'win') return `Победа REVI ${r.ourFlags}:${r.theirFlags}`
+    if (r.outcome === 'lose') return `Поражение ${r.ourFlags}:${r.theirFlags}`
+    return `Ничья ${r.ourFlags}:${r.theirFlags}`
+  }
 
   return (
     <div className="app-shell">
@@ -138,7 +159,7 @@ export default function App() {
           </div>
           <div className="side-nav-brand-text">
             <span className="side-nav-title">Каньон</span>
-            <span className="side-nav-subtitle">REVI · линии</span>
+            <span className="side-nav-subtitle">REVI vs BDSM</span>
           </div>
         </div>
         <nav className="side-nav-menu">
@@ -154,7 +175,7 @@ export default function App() {
             className={`side-nav-item ${section === 'battle' ? 'is-active' : ''}`}
             onClick={() => setSection('battle')}
           >
-            Бои
+            Прогноз боёв
           </button>
           <button
             type="button"
@@ -165,7 +186,7 @@ export default function App() {
           </button>
         </nav>
         <button type="button" className="btn btn-secondary side-nav-demo" onClick={loadDemo}>
-          Демо vs BDSM
+          Демо REVI vs BDSM
         </button>
       </aside>
 
@@ -173,51 +194,50 @@ export default function App() {
         <div className="app">
           <header className="page-header">
             <div>
-              <p className="eyebrow">Альянс REVI</p>
-              <h1>Завоевание каньона</h1>
+              <p className="eyebrow">Цель: победить BDSM</p>
+              <h1>Расстановка REVI</h1>
               <p className="lead">
-                Итог — три линии: ник и мощь. Соперник BDSM подставлен со скринов.
+                Берём текущий состав REVI и состав BDSM со скринов, считаем перестановку
+                по трём линиям (ник + мощь), чтобы выиграть по флагам.
               </p>
             </div>
             <button type="button" className="btn btn-primary" onClick={loadDemo}>
-              Демо vs BDSM
+              Демо REVI vs BDSM
             </button>
           </header>
 
           {demoNote && <div className="toast-note">{demoNote}</div>}
 
-          {(section === 'result' || section === 'setup') && (
-            <div className="enemy-source-bar">
-              <span>Источник BDSM:</span>
-              <button
-                type="button"
-                className={`btn ${enemySource === 'battles' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => applyEnemySource('battles')}
-              >
-                Боевые отчёты (r0yal666…)
-              </button>
-              <button
-                type="button"
-                className={`btn ${enemySource === 'setup' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => applyEnemySource('setup')}
-              >
-                Расстановка (SenjorTomato…)
-              </button>
-            </div>
-          )}
-
           {section === 'result' && (
             <>
+              <div className="score-bar">
+                <div>
+                  <span className="muted">Сейчас</span>
+                  <strong>{outcomeLabel(resultBefore)}</strong>
+                </div>
+                <div>
+                  <span className="muted">После оптимизации</span>
+                  <strong className={result?.outcome === 'win' ? 'ok' : ''}>
+                    {outcomeLabel(result)}
+                  </strong>
+                </div>
+              </div>
+
               <EnemyLineupView enemy={enemy} />
+
+              {LANE_IDS.some((l) => currentAssignment[l].length > 0) && (
+                <LineupResult
+                  assignment={currentAssignment}
+                  allianceTag="REVI сейчас"
+                  title="Текущая расстановка REVI (со скринов)"
+                  maxPerLane={settings.maxPerLane}
+                />
+              )}
 
               <LineupResult
                 assignment={assignment}
-                allianceTag={demoNote ? 'пример LMB' : 'REVI'}
-                title={
-                  demoNote
-                    ? 'Наша сторона в демо (LMB со скринов — замените на REVI)'
-                    : 'Расстановка REVI'
-                }
+                allianceTag="REVI рекомендуем"
+                title="Рекомендуемая расстановка REVI (чтобы обыграть BDSM)"
                 maxPerLane={settings.maxPerLane}
                 onMove={handleMoveBetweenLanes}
               />
@@ -255,7 +275,7 @@ export default function App() {
             <>
               <div className="grid-2">
                 <RosterUpload
-                  title="Ростер REVI"
+                  title="Ростер REVI (ник + мощь)"
                   allianceTag="REVI"
                   players={roster}
                   onChange={handleRosterChange}
@@ -271,20 +291,39 @@ export default function App() {
                   if (LANE_IDS.some((l) => assignment[l].length > 0)) {
                     setResult(simulateMatch(assignment, enemy, s))
                   }
+                  if (LANE_IDS.some((l) => currentAssignment[l].length > 0)) {
+                    setResultBefore(simulateMatch(currentAssignment, enemy, s))
+                  }
                 }}
-                onApply={handleApply}
+                onApply={() => {
+                  if (roster.length === 0 && flatFromAssignment(currentAssignment).length) {
+                    optimize(
+                      flatFromAssignment(currentAssignment),
+                      enemy,
+                      currentAssignment,
+                    )
+                    return
+                  }
+                  handleApply()
+                }}
                 onExport={handleExport}
-              />
-              <EnemyLineupView enemy={enemy} />
-              <LineupResult
-                assignment={assignment}
-                maxPerLane={settings.maxPerLane}
-                onMove={handleMoveBetweenLanes}
               />
             </>
           )}
 
-          {section === 'battle' && <SimResults result={result} />}
+          {section === 'battle' && (
+            <>
+              {resultBefore && (
+                <section className="panel">
+                  <div className="panel-head">
+                    <h2>Прогноз при текущей расстановке</h2>
+                    <span className="badge">{outcomeLabel(resultBefore)}</span>
+                  </div>
+                </section>
+              )}
+              <SimResults result={result} />
+            </>
+          )}
         </div>
       </main>
     </div>
