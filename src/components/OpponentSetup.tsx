@@ -61,8 +61,8 @@ export function OpponentSetup({ enemy, onChange }: Props) {
   return (
     <section className="panel">
       <header className="panel__head">
-        <h2>Соперник</h2>
-        <span className="tag tag--enemy">BDSM / вручную</span>
+        <h2>Соперник BDSM</h2>
+        <span className="tag tag--enemy">ник + мощь</span>
       </header>
 
       <div className="upload-row">

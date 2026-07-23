@@ -87,10 +87,10 @@ export function StrategyPanel({
       </div>
 
       <div className="upload-row">
-        <button type="button" className="btn btn--primary" onClick={onApply} disabled={busy}>
+        <button type="button" className="btn btn-primary" onClick={onApply} disabled={busy}>
           Рассчитать расстановку
         </button>
-        <button type="button" className="btn btn--secondary" onClick={onExport}>
+        <button type="button" className="btn btn-secondary" onClick={onExport}>
           Экспорт CSV
         </button>
       </div>
