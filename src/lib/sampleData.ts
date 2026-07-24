@@ -70,6 +70,7 @@ export const REVI_CURRENT: LaneAssignment = {
     ['DreamerDoom', 3121915],
   ]),
   center: lane([
+    // бой 15→1 (со скринов «Центральная» — IDARQ/Hkn/VishenkA в топ-15)
     ['◇ZloiPAPA◇', 21718663, MONO_BLUE],
     ['PR0vokaTOR', 21467061, MONO_BLUE],
     ['SenjorTomato', 21353445, MONO_BLUE],
@@ -82,10 +83,13 @@ export const REVI_CURRENT: LaneAssignment = {
     ['ДядяВова', 16674497, MONO_BLUE],
     ['Defa1000', 16588903, MONO_RED],
     ['KomstoK', 15800632, MONO_BLUE],
+    ['IDARQ', 14825494, ['red', 'red', 'blue', 'red', 'red']],
+    ['Hkn', 14761788, MONO_RED],
+    ['VishenkA', 14413235, MONO_RED],
+    // запас
     ['Dze', 15638710, MONO_BLUE],
     ['TaraKash', 14587000, MONO_BLUE],
     ['Solnce', 14438575, MONO_BLUE],
-    // запас
     ['Tusker777', 14164031],
     ['DziL', 13941066],
     ['friendWwW', 13715458],
@@ -104,14 +108,11 @@ export const REVI_CURRENT: LaneAssignment = {
     ['Puziko', 5576167],
   ]),
   right: lane([
-    // 29/15 — топ по порядку ходов со скринов
+    // правая — остальные со скринов (без дублей центра)
     ['Ałejanđrɵ', 16218911, MONO_RED],
     ['BAGIGR', 15735894, MONO_RED],
     ['General-Alcohol', 15501675, MONO_RED],
     ['MasoudEsm', 14974918, MONO_RED],
-    ['IDARQ', 14825494, ['red', 'red', 'blue', 'red', 'red']],
-    ['Hkn', 14761788, MONO_RED],
-    ['VishenkA', 14413235, MONO_RED],
     ['Лемниската', 14197768, MONO_GREEN],
     ['《Koschō》', 14157469, MONO_BLUE],
     ['PolWilliam', 14087553, MONO_RED],
@@ -208,4 +209,4 @@ export function makeReviRoster(): Player[] {
 }
 
 export const DEMO_NOTE =
-  'Демо: REVI vs LMB. Мощь REVI — со свежих скринов расстановки; LMB — с боевых отчётов. Линии: левая↔левая, центр↔центр, правая↔правая.'
+  'Демо: REVI vs LMB. REVI — со скринов расстановки (IDARQ, Hkn, VishenkA — центр). LMB — с боевых отчётов. Линии: левая↔левая, центр↔центр, правая↔правая.'
