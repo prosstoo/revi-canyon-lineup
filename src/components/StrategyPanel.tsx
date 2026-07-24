@@ -22,7 +22,7 @@ export function StrategyPanel({
     <section className="panel">
       <header className="panel__head">
         <h2>Стратегия</h2>
-        <span className="tag">наше право ↔ их лево</span>
+        <span className="tag">левая↔левая · центр↔центр · правая↔правая</span>
       </header>
 
       <div className="strategies">

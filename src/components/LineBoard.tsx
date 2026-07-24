@@ -14,7 +14,7 @@ export function LineBoard({ assignment, maxPerLane, unassigned, onMove }: Props)
   return (
     <section className="panel panel--wide">
       <header className="panel__head">
-        <h2>Расстановка REVI</h2>
+        <h2>Расстановка LMB</h2>
         <span className="tag">порядок на линии: слабые → сильные</span>
       </header>
 

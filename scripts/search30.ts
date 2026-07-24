@@ -158,7 +158,7 @@ function main() {
   for (const l of LANE_IDS) {
     console.log(`  their ${l}: n=${enemy[l].length} sum=${lanePower(enemy[l])}`)
   }
-  console.log('Facing: our left↔their right, center↔center, our right↔their left')
+  console.log('Facing: left↔left, center↔center, right↔right')
   console.log(`Roster size: ${roster.length}`)
 
   console.log('\n=== Current assignment ===')

@@ -12,8 +12,8 @@ interface Props {
 export function SimResults({
   result,
   title = 'Прогноз боёв',
-  ourLabel = 'REVI',
-  theirLabel = 'BDSM',
+  ourLabel = 'LMB',
+  theirLabel = 'ASBI',
 }: Props) {
   if (!result) {
     return (

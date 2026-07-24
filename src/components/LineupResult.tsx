@@ -15,7 +15,7 @@ interface Props {
 
 export function LineupResult({
   assignment,
-  allianceTag = 'REVI',
+  allianceTag = 'LMB',
   title = 'Расстановка по линиям',
   maxPerLane,
   onMove,
@@ -42,7 +42,7 @@ export function LineupResult({
           <h2>{title}</h2>
           <p className="muted small">
             Порядок в списке: сильные → слабые (ход {Math.max(...LANE_IDS.map((l) => assignment[l].length), 1)}…1).
-            {showFacingHint ? ' Наша левая бьётся с их правой, наша правая — с их левой.' : ''}
+            {showFacingHint ? ' Линии бьются прямо: левая↔левая, центр↔центр, правая↔правая.' : ''}
           </p>
         </div>
         <span className="badge badge-ok">{allianceTag}</span>
@@ -179,7 +179,7 @@ interface EnemyProps {
 
 export function EnemyLineupView({
   enemy,
-  allianceName = 'BDSM',
+  allianceName = 'ASBI',
   onEditPower,
 }: EnemyProps) {
   return (
@@ -188,7 +188,7 @@ export function EnemyLineupView({
         <div>
           <h2>Состав линий {allianceName}</h2>
           <p className="muted small">
-            Их левая напротив нашей правой; их правая — напротив нашей левой.
+            Та же линия: левая↔левая, центр↔центр, правая↔правая.
           </p>
         </div>
         <span className="badge badge-warn">{allianceName}</span>

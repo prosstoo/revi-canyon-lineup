@@ -26,7 +26,7 @@ interface Props {
   onEditPower?: (playerId: string, power: number) => void
 }
 
-/** 6 таблиц в ряд: наша линия | линия врага напротив × 3 */
+/** 6 таблиц в ряд: наша линия | та же линия врага (левая↔левая) × 3 */
 export function MatchupLineups({
   title,
   badge,
@@ -73,7 +73,7 @@ export function MatchupLineups({
           <div>
             <h2>{title}</h2>
             <p className="muted small">
-              В каждом поединке слева — {ourName}, справа — линия {enemyName} напротив.
+              В каждом поединке слева — {ourName}, справа — та же линия {enemyName} (левая↔левая, центр↔центр, правая↔правая).
               Порядок: сильные → слабые.
             </p>
           </div>
@@ -94,7 +94,7 @@ export function MatchupLineups({
         <>
           {collapsible && (
             <p className="muted small matchup-hint">
-              В каждом поединке слева — {ourName}, справа — линия {enemyName} напротив.
+              В каждом поединке слева — {ourName}, справа — та же линия {enemyName} (левая↔левая, центр↔центр, правая↔правая).
               Порядок: сильные → слабые.
             </p>
           )}
@@ -143,7 +143,7 @@ export function MatchupLineups({
                       <LaneMiniTable
                         accent="enemy"
                         title={`${enemyName} · ${shortLane(theirLane)}`}
-                        subtitle="напротив"
+                        subtitle="та же линия"
                         lane={theirLane}
                         players={theirFight[theirLane]}
                         fullCount={enemy[theirLane].length}

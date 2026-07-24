@@ -3,9 +3,8 @@ import { createPlayer } from './parseRoster'
 
 type Row = readonly [string, number, HeroColor[]?]
 
-const MONO_BLUE: HeroColor[] = ['blue', 'blue', 'blue', 'blue', 'blue']
 const MONO_RED: HeroColor[] = ['red', 'red', 'red', 'red', 'red']
-const MONO_GREEN: HeroColor[] = ['green', 'green', 'green', 'green', 'green']
+const MONO_BLUE: HeroColor[] = ['blue', 'blue', 'blue', 'blue', 'blue']
 
 function lane(rows: Row[]): Player[] {
   return rows.map(([nick, power, squad]) => createPlayer(nick, power, squad ?? []))
@@ -30,128 +29,137 @@ function flatten(src: LaneAssignment): Player[] {
 }
 
 /**
- * Текущая расстановка REVI — со скринов линий + цвета из боевых отчётов 24.07.
- * Цвета: синие=танк, красные=ракета, зелёные=авиа. Пустой squad = неизвестно.
+ * LMB (#87) — боевые отчёты 24.07 vs ASBI (photo_22–41).
+ * Линия = вкладка отчёта (левая↔левая).
  */
-export const REVI_CURRENT: LaneAssignment = {
+export const LMB_CURRENT: LaneAssignment = {
   left: lane([
-    ['SenjorTomato', 21345706, MONO_BLUE],
-    ['BOMBARDIER', 20207802, ['blue', 'red', 'red', 'red', 'red']],
-    ['Аллегрова', 19669686, MONO_GREEN],
-    ['Layrouse', 19214805, MONO_BLUE],
-    ['★BipolarStar★', 18119101, MONO_BLUE],
-    ['Ałejanđrɵ', 16218911, MONO_RED],
-    ['BAGIGR', 15735894, MONO_RED],
-    ['Dze', 15638710, MONO_BLUE],
-    ['General-Alcohol', 15501675, MONO_RED],
-    ['MasoudEsm', 14974918, MONO_RED],
-    ['炊き込み御飯', 14789792, MONO_BLUE],
-    ['MixturA', 14627872, MONO_GREEN],
-    ['《Koschō》', 14157469, MONO_BLUE],
-    ['PolWilliam', 14087553, MONO_RED],
-    ['Tusker777', 14045796, MONO_RED],
+    ['stague', 19082930, MONO_RED],
+    ['MeLiH', 18762462, ['red', 'red', 'blue', 'red', 'blue']],
+    ['M-V-P--Jay', 18490093, MONO_RED],
+    ['Crazypills', 18111846, MONO_RED],
+    ['Ir0nGhosT', 18060645, MONO_BLUE],
+    ['Kleee', 17333666, MONO_RED],
+    ['OffBeatFox', 17278055, MONO_RED],
+    ['Morso', 17043965, MONO_BLUE],
+    ['Banana×Monkey', 17031384, MONO_RED],
+    ['Bianca92', 16549021, MONO_RED],
   ]),
   center: lane([
-    ['PR0vokaTOR', 21465198, MONO_BLUE],
-    ['◇ZloiPAPA◇', 21443909, MONO_BLUE],
-    ['devyy', 20278099, MONO_GREEN],
-    ['KKKe', 19482184, MONO_BLUE],
-    ['Hitter', 17472698, MONO_RED],
-    ['DocSirena', 17209711, MONO_BLUE],
-    ['Defa1000', 16588903, MONO_RED],
-    ['страх', 16240979, MONO_GREEN],
-    ['KomstoK', 15800632, MONO_BLUE],
-    ['VishenkA', 14401600, MONO_RED],
-    ['TaraKash', 14352983, MONO_BLUE],
-    ['Hkn', 14257829, MONO_RED],
-    ['Лемниската', 14197768, MONO_GREEN],
-    ['DziL', 13824562, MONO_BLUE],
-    ['friendWwW', 13635675, MONO_RED],
+    ['Sontaro', 18775029, MONO_RED],
+    ['Qdeviant', 18269609, MONO_BLUE],
+    ['filthycasual', 17837126, MONO_RED],
+    ['BigDaddy14', 15058060, MONO_RED],
+    ['ΔRoshyΔ', 14743896, MONO_BLUE],
+    ['RockFarm', 14719393, MONO_RED],
+    ['Sorrytiger', 14645305, MONO_RED],
+    ['iRoniC', 14422940, MONO_BLUE],
+    ['Bungholio', 14400058, MONO_RED],
+    ['D0CTOR3', 14364466, MONO_RED],
+    ['•Melody•', 14345560, MONO_BLUE],
+    ['☆☆VividDreamer☆☆', 13979123, MONO_RED],
+    ['JakeSv', 13723408, ['red', 'blue', 'red', 'blue', 'red']],
+    ['Manezin82', 13360092, ['red', 'red', 'blue', 'blue', 'red']],
+    ['PRIVATE', 12676793, MONO_RED],
   ]),
   right: lane([
-    ['IBlackFlint', 20753024, MONO_BLUE],
-    ['nevyy', 19752086, ['blue', 'red', 'red', 'red', 'red']],
-    ['LAMPOCHKA', 19547186, MONO_GREEN],
-    ['Tim2', 19013083, MONO_BLUE],
-    ['cdpkaktus', 18800876, MONO_RED],
-    ['Maranill', 18724594, MONO_GREEN],
-    ['---КИС---', 17840010, MONO_BLUE],
-    ['Solevar', 17238314, MONO_RED],
-    ['ДядяВова', 16630372, MONO_BLUE],
-    ['VaRvArTTT', 16411480, MONO_RED],
-    ['Plytofka', 16148736, MONO_GREEN],
-    ['IDARQ', 14825494, ['red', 'red', 'blue', 'red', 'red']],
-    ['Solnce', 14438575, MONO_BLUE],
-    ['AtAman', 14031840, MONO_RED],
-    ['madnesss', 13286055, MONO_RED],
+    ['偽陽性', 22326951, MONO_BLUE],
+    ["Lil'Wolfie", 18164321, MONO_RED],
+    ['ETSoul38', 17401071, MONO_RED],
+    ['Szymon83', 17234005, MONO_BLUE],
+    ['K4ttluvrr7777', 16732267, MONO_RED],
+    ["'Eternal'", 16210576, MONO_RED],
+    ['Shōkyaku', 16054076, MONO_BLUE],
+    ['LadyCrazyPills', 15260084, MONO_RED],
+    ['KenzoSeekhem', 15183109, MONO_RED],
+    ['OdRaCiR', 15090103, MONO_BLUE],
+    ['GarceGarce', 14964700, MONO_RED],
+    ['Ferlight', 14813572, MONO_RED],
+    ['Lilitxxx1', 13621782, MONO_BLUE],
+    ['Undertaker10', 13471689, MONO_RED],
   ]),
 }
 
 /**
- * Противник BDSM — боевые отчёты 24.07 + цвета составов со скринов.
+ * ASBI (#122) — противник LMB, те же вкладки отчётов.
  */
-export const BDSM_OPPONENT: LaneAssignment = {
+export const ASBI_OPPONENT: LaneAssignment = {
   left: lane([
-    ['r0yal666', 23331771, MONO_BLUE],
-    ['すぬお', 21493865, MONO_BLUE],
-    ['HОЧЬ', 21136415, MONO_RED],
-    ['Ermakiko', 20428754, ['blue', 'red', 'red', 'red', 'red']],
-    ['SeliX', 20340657, MONO_BLUE],
-    ['Roza-Kass', 18908601, MONO_GREEN],
-    ['«ЗloDei»', 18215389, MONO_RED],
-    ['ゆうHO', 18191402, MONO_BLUE],
-    ['Котэн', 18044382, ['green', 'blue', 'red', 'green', 'red']],
-    ['Alletta', 17434038, MONO_RED],
-    ['Тайрэ', 17085340, MONO_BLUE],
-    ['Morgwen', 16901192, ['red', 'blue', 'green', 'red', 'blue']],
-    ['ДокторХалк5264', 16703490, MONO_RED],
-    ['MAPA', 16321544, MONO_BLUE],
-    ['MenToR', 16196448, MONO_RED],
+    ['Busgosu', 17896232, MONO_RED],
+    ['☆ Karmen ☆', 17763305, MONO_RED],
+    ['Solvas', 16170167, MONO_RED],
+    ['Firebladerr97', 16049749, MONO_BLUE],
+    ['haposai', 15416542, MONO_RED],
+    ['САЛАМАНДРА', 15206419, MONO_RED],
+    ['Zubr56', 15114759, MONO_BLUE],
+    ['Baiamut', 14629766, MONO_RED],
+    ['Smetan', 14094805, MONO_RED],
+    ['Ебушкиворобушки', 13570260, MONO_RED],
+    ['SallySaffron', 13110981, MONO_BLUE],
+    ['Жене4каааа', 12565495, MONO_RED],
+    ['Zaura04', 12024673, MONO_RED],
+    ['ЗасланнаяP', 11956919, MONO_BLUE],
+    ['VиKtoRиЯ', 11878410, MONO_RED],
   ]),
   center: lane([
-    ['Veleoka', 15993335, MONO_RED],
-    ['DoctorDido', 15840511, MONO_RED],
-    ['DiMiDoGlu-777', 15809605, MONO_BLUE],
-    ['LoraApril', 15803988, MONO_RED],
-    ['ArasakeSabura', 15744224, MONO_GREEN],
-    ['SayaKGZ', 15639409, MONO_RED],
-    ['Горшок', 15350121, MONO_BLUE],
-    ['xLilith-LapaxX', 14920851, MONO_RED],
-    ['有馬公生', 14898723, MONO_RED],
-    ['xPanDeMoNiUmX', 14820470, MONO_RED],
-    ['Wervolf92', 14640989, MONO_BLUE],
-    ['CptChaos', 14562117, MONO_RED],
-    ['semlol', 14332031, MONO_GREEN],
-    ['Ragip', 13992468, MONO_RED],
-    ['душегуб', 13915118, MONO_BLUE],
+    ['LordKreton', 20276489, MONO_BLUE],
+    ['Dejmill', 17860932, MONO_RED],
+    ['Kalesí', 17656435, MONO_RED],
+    ['Spartキツネ', 16326289, MONO_BLUE],
+    ['RemboBezTrysov', 16256490, MONO_RED],
+    ['XxMORTIZxX', 15699025, MONO_RED],
+    ['Люциферрр', 14731401, MONO_BLUE],
+    ['Selene78', 14519038, MONO_RED],
+    ['SkuldGallaecia', 13897210, MONO_RED],
+    ['Mashulya69Rus', 13823626, MONO_BLUE],
+    ['SERIBAN', 13174260, MONO_RED],
+    ['МерлинМонро', 12931251, MONO_RED],
+    ['CRELOR', 12257530, MONO_RED],
+    ['Xhamara', 11951213, MONO_BLUE],
   ]),
   right: lane([
-    ['Soldat76', 19720996, MONO_BLUE],
-    ['KOLXOZNIK', 19581134, MONO_RED],
-    ['Jester', 19300761, MONO_GREEN],
-    ['Глазнюк', 18739659, MONO_BLUE],
-    ['Atata', 17799237, MONO_RED],
-    ['БАРТЯК', 17613326, MONO_BLUE],
-    ['Dytel', 17595423, MONO_RED],
-    ['Амарачи', 17284794, MONO_GREEN],
-    ['Тучка', 16900087, MONO_RED],
-    ['Мия2777', 16801498, MONO_BLUE],
-    ['FlexLady', 16219776, MONO_RED],
-    ['DivinityV', 16123304, MONO_RED],
+    ['DrQuijote', 20057945, MONO_BLUE],
+    ['Габигаби', 18562592, MONO_RED],
+    ['kukylot', 16837871, MONO_RED],
+    ['Unblooder', 16727270, MONO_BLUE],
+    ['Galahan17', 15857818, MONO_RED],
+    ['QueenShadows', 15721263, MONO_RED],
+    ['samaru', 15580200, MONO_BLUE],
+    ['анестезиолог', 15332440, MONO_RED],
+    ['ELROND', 14643810, MONO_RED],
+    ['MaстерицA', 14335942, MONO_BLUE],
+    ['Vl4dislav', 13941262, MONO_RED],
+    ['MrTuberculo', 13668349, MONO_RED],
+    ['•Bambolina•', 13363721, MONO_BLUE],
+    ['Stas707', 12663327, MONO_RED],
+    ['Swetlana17247', 12243511, MONO_RED],
   ]),
+}
+
+/** @deprecated alias — старое имя, теперь LMB */
+export const REVI_CURRENT = LMB_CURRENT
+/** @deprecated alias — старое имя, теперь ASBI */
+export const BDSM_OPPONENT = ASBI_OPPONENT
+
+export function makeAsbiEnemy(): LaneAssignment {
+  return cloneLanes(ASBI_OPPONENT)
+}
+
+export function makeLmbCurrentAssignment(): LaneAssignment {
+  return cloneLanes(LMB_CURRENT)
 }
 
 export function makeBdsmEnemy(): LaneAssignment {
-  return cloneLanes(BDSM_OPPONENT)
+  return makeAsbiEnemy()
 }
 
 export function makeReviCurrentAssignment(): LaneAssignment {
-  return cloneLanes(REVI_CURRENT)
+  return makeLmbCurrentAssignment()
 }
 
 export function makeReviRoster(): Player[] {
-  return flatten(REVI_CURRENT)
+  return flatten(LMB_CURRENT)
 }
 
 export const DEMO_NOTE =
-  'Демо 24.07: учтены цвета героев (С>К>З>С) и моно-бонус 5/5. Стратегия по умолчанию — 2 сильные + 1 слабая напротив самой жирной линии BDSM.'
+  'Демо 24.07: LMB vs ASBI со скринов боёв. Линии бьются прямо: левая↔левая, центр↔центр, правая↔правая.'

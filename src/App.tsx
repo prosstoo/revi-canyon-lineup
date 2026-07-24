@@ -6,8 +6,8 @@ import { StrategyPanel } from './components/StrategyPanel'
 import { assignmentToCsv } from './lib/parseRoster'
 import {
   DEMO_NOTE,
-  makeBdsmEnemy,
-  makeReviCurrentAssignment,
+  makeAsbiEnemy,
+  makeLmbCurrentAssignment,
 } from './lib/sampleData'
 import {
   emptyLanes,
@@ -59,10 +59,10 @@ function scrollToId(id: string) {
 }
 
 export default function App() {
-  const [ourName, setOurName] = useState('REVI')
-  const [enemyName, setEnemyName] = useState('BDSM')
+  const [ourName, setOurName] = useState('LMB')
+  const [enemyName, setEnemyName] = useState('ASBI')
   const [revi, setRevi] = useState<LaneAssignment>(emptyLanes)
-  const [enemy, setEnemy] = useState<LaneAssignment>(() => makeBdsmEnemy())
+  const [enemy, setEnemy] = useState<LaneAssignment>(() => makeAsbiEnemy())
   const [assignment, setAssignment] = useState<LaneAssignment>(emptyLanes)
   const [strategy, setStrategy] = useState<StrategyId>('twoStrong')
   const [settings] = useState<BattleSettings>(DEFAULT_SETTINGS)
@@ -189,12 +189,12 @@ export default function App() {
   }
 
   function loadDemo() {
-    const bdsm = makeBdsmEnemy()
-    const reviNow = makeReviCurrentAssignment()
-    setOurName('REVI')
-    setEnemyName('BDSM')
-    setEnemy(bdsm)
-    setRevi(reviNow)
+    const asbi = makeAsbiEnemy()
+    const lmbNow = makeLmbCurrentAssignment()
+    setOurName('LMB')
+    setEnemyName('ASBI')
+    setEnemy(asbi)
+    setRevi(lmbNow)
     setAssignment(emptyLanes())
     setResult(null)
     setResultBefore(null)
@@ -309,7 +309,7 @@ export default function App() {
                 <ul>
                   <li>3 линии. Победа — у кого больше флагов.</li>
                   <li>
-                    Наша правая бьётся с их левой, наша левая — с их правой, центр с центром.
+                    Линии бьются прямо: левая↔левая, центр↔центр, правая↔правая.
                   </li>
                   <li>В бой на линии — до 15 самых сильных (можно загрузить больше).</li>
                   <li>Эстафета: слабые → сильные, победитель идёт с остатком мощи.</li>

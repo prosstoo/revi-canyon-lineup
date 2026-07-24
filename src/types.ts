@@ -8,11 +8,11 @@ export const LANE_LABELS: Record<LaneId, string> = {
   right: 'Правая линия',
 }
 
-/** Наша линия → линия противника напротив (лево↔право, центр↔центр) */
+/** Наша линия → линия противника: левая↔левая, центр↔центр, правая↔правая (по боевым отчётам). */
 export const FACING_LANE: Record<LaneId, LaneId> = {
-  left: 'right',
+  left: 'left',
   center: 'center',
-  right: 'left',
+  right: 'right',
 }
 
 /** Цвет/фракция героя: синие (танк), красные (ракета), зелёные (авиа) */
