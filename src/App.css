@@ -562,11 +562,58 @@ textarea {
   font-size: 0.82rem;
 }
 
-.squad-badge {
-  font-size: 0.68rem;
+.bulk-color-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.65rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+
+.lane-color-bulk {
+  display: inline-flex;
+  gap: 0.2rem;
+  align-items: center;
+}
+
+.color-bulk {
+  font-size: 0.78rem !important;
+  padding: 0.28rem 0.5rem !important;
   font-weight: 700;
-  color: var(--muted);
-  text-align: center;
+}
+
+.color-bulk--blue {
+  background: color-mix(in srgb, #3b82f6 22%, var(--surface));
+  border-color: color-mix(in srgb, #3b82f6 45%, var(--border));
+  color: #1d4ed8;
+}
+
+.color-bulk--red {
+  background: color-mix(in srgb, #ef4444 20%, var(--surface));
+  border-color: color-mix(in srgb, #ef4444 45%, var(--border));
+  color: #b91c1c;
+}
+
+.color-bulk--green {
+  background: color-mix(in srgb, #22c55e 20%, var(--surface));
+  border-color: color-mix(in srgb, #22c55e 45%, var(--border));
+  color: #15803d;
+}
+
+[data-theme='dark'] .color-bulk--blue {
+  color: #93c5fd;
+}
+
+[data-theme='dark'] .color-bulk--red {
+  color: #fca5a5;
+}
+
+[data-theme='dark'] .color-bulk--green {
+  color: #86efac;
 }
 
 .color-move {

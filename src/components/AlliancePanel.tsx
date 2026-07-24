@@ -11,6 +11,10 @@ import type { HeroColor, LaneAssignment, LaneId, Player } from '../types'
 import { LANE_IDS, LANE_LABELS } from '../types'
 import { squadToShort } from '../lib/colors'
 
+function monoSquad(color: HeroColor): HeroColor[] {
+  return [color, color, color, color, color]
+}
+
 interface Props {
   name: string
   onNameChange: (name: string) => void
@@ -40,6 +44,23 @@ export function AlliancePanel({
   function swapLanes(a: LaneId, b: LaneId) {
     if (a === b) return
     onChange({ ...lanes, [a]: lanes[b], [b]: lanes[a] })
+  }
+
+  function setAllColors(color: HeroColor | null) {
+    const squad = color ? monoSquad(color) : []
+    const next = emptyLanes()
+    for (const l of LANE_IDS) {
+      next[l] = lanes[l].map((p) => ({ ...p, squad: [...squad] }))
+    }
+    onChange(next)
+  }
+
+  function setLaneColors(l: LaneId, color: HeroColor | null) {
+    const squad = color ? monoSquad(color) : []
+    onChange({
+      ...lanes,
+      [l]: lanes[l].map((p) => ({ ...p, squad: [...squad] })),
+    })
   }
 
   async function onFile(file: File | null) {
@@ -157,6 +178,46 @@ export function AlliancePanel({
         )}
       </div>
 
+      <div className="bulk-color-bar" role="group" aria-label="Цвет для всех игроков">
+        <span className="lane-swap-label">Цвет всем</span>
+        <button
+          type="button"
+          className="btn color-bulk color-bulk--blue"
+          disabled={total === 0}
+          onClick={() => setAllColors('blue')}
+          title="Всем синие ×5 (танк)"
+        >
+          С×5
+        </button>
+        <button
+          type="button"
+          className="btn color-bulk color-bulk--red"
+          disabled={total === 0}
+          onClick={() => setAllColors('red')}
+          title="Всем красные ×5 (ракета)"
+        >
+          К×5
+        </button>
+        <button
+          type="button"
+          className="btn color-bulk color-bulk--green"
+          disabled={total === 0}
+          onClick={() => setAllColors('green')}
+          title="Всем зелёные ×5 (авиа)"
+        >
+          З×5
+        </button>
+        <button
+          type="button"
+          className="btn btn--ghost color-bulk"
+          disabled={total === 0}
+          onClick={() => setAllColors(null)}
+          title="Сбросить цвета"
+        >
+          Сброс
+        </button>
+      </div>
+
       {showAdd && (
         <div className="manual-add">
           <select value={lane} onChange={(e) => setLane(e.target.value as LaneId)}>
@@ -192,12 +253,62 @@ export function AlliancePanel({
             onRemove={(id) => removePlayer(l, id)}
             onEditPower={(id, pow) => updatePower(l, id, pow)}
             onEditSquad={(id, squad) => updateSquad(l, id, squad)}
+            onSetLaneColor={(color) => setLaneColors(l, color)}
             onMoveTo={(id, to) => movePlayer(id, l, to)}
             onSwapWith={(other) => swapLanes(l, other)}
           />
         ))}
       </div>
     </section>
+  )
+}
+
+function ColorBulkButtons({
+  disabled,
+  onPick,
+}: {
+  disabled: boolean
+  onPick: (color: HeroColor | null) => void
+}) {
+  return (
+    <div className="lane-color-bulk" role="group" aria-label="Цвет линии">
+      <button
+        type="button"
+        className="btn btn--tiny color-bulk color-bulk--blue"
+        disabled={disabled}
+        onClick={() => onPick('blue')}
+        title="Всей линии: синие ×5"
+      >
+        С
+      </button>
+      <button
+        type="button"
+        className="btn btn--tiny color-bulk color-bulk--red"
+        disabled={disabled}
+        onClick={() => onPick('red')}
+        title="Всей линии: красные ×5"
+      >
+        К
+      </button>
+      <button
+        type="button"
+        className="btn btn--tiny color-bulk color-bulk--green"
+        disabled={disabled}
+        onClick={() => onPick('green')}
+        title="Всей линии: зелёные ×5"
+      >
+        З
+      </button>
+      <button
+        type="button"
+        className="btn btn--tiny btn--ghost"
+        disabled={disabled}
+        onClick={() => onPick(null)}
+        title="Сбросить цвета линии"
+      >
+        ×
+      </button>
+    </div>
   )
 }
 
@@ -210,6 +321,7 @@ function LaneEditor({
   onRemove,
   onEditPower,
   onEditSquad,
+  onSetLaneColor,
   onMoveTo,
   onSwapWith,
 }: {
@@ -221,6 +333,7 @@ function LaneEditor({
   onRemove: (id: string) => void
   onEditPower: (id: string, power: number) => void
   onEditSquad: (id: string, squad: HeroColor[]) => void
+  onSetLaneColor: (color: HeroColor | null) => void
   onMoveTo: (id: string, to: LaneId) => void
   onSwapWith: (other: LaneId) => void
 }) {
@@ -258,6 +371,7 @@ function LaneEditor({
           {players.length}
           {overflow ? ` (бой: ${maxFight})` : ''} · {formatPower(lanePower(fighters))}
         </span>
+        <ColorBulkButtons disabled={players.length === 0} onPick={onSetLaneColor} />
         {allowLaneSwap && (
           <div className="lane-head-swaps">
             {others.map((o) => (
@@ -305,7 +419,7 @@ function LaneEditor({
                 onChange={(e) => {
                   const v = e.target.value
                   if (v === 'blue' || v === 'red' || v === 'green') {
-                    onEditSquad(p.id, [v, v, v, v, v])
+                    onEditSquad(p.id, monoSquad(v))
                   } else if (v === '') {
                     onEditSquad(p.id, [])
                   }
