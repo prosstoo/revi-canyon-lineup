@@ -8,6 +8,7 @@ import {
 } from '../lib/simulate'
 import type { LaneAssignment, LaneId, MatchSimResult, Player } from '../types'
 import { FACING_LANE, LANE_IDS, LANE_LABELS } from '../types'
+import { squadToShort } from '../lib/colors'
 
 interface Props {
   title: string
@@ -238,7 +239,7 @@ function LaneMiniTable({
               }
             >
               <td className="col-ord">{turnOrderNumber(i, sorted.length)}</td>
-              <td className="col-nick">{p.nick}</td>
+              <td className="col-nick">{p.nick}{p.squad.length ? <span className="squad-badge"> {squadToShort(p.squad)}</span> : null}</td>
               <td className="col-pow">
                 {onEditPower && editable ? (
                   <input

@@ -76,9 +76,11 @@ export function SimResults({
                     <tr>
                       <th>{ourLabel}</th>
                       <th>Мощь</th>
+                      <th>Эфф.</th>
                       <th></th>
                       <th>{theirLabel}</th>
                       <th>Мощь</th>
+                      <th>Эфф.</th>
                       <th>Остаток</th>
                     </tr>
                   </thead>
@@ -90,9 +92,15 @@ export function SimResults({
                       >
                         <td>{f.oursNick}</td>
                         <td>{formatPower(f.oursPower)}</td>
+                        <td className="col-eff" title="С учётом цвета и моно">
+                          {formatPower(f.oursEffective)}
+                        </td>
                         <td>{f.winner === 'us' ? '▶' : '◀'}</td>
                         <td>{f.theirsNick}</td>
                         <td>{formatPower(f.theirsPower)}</td>
+                        <td className="col-eff" title="С учётом цвета и моно">
+                          {formatPower(f.theirsEffective)}
+                        </td>
                         <td>{formatPower(f.residual)}</td>
                       </tr>
                     ))}

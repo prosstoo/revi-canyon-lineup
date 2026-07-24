@@ -50,6 +50,7 @@ export function RosterUpload({ title, allianceTag, players, onChange }: Props) {
                 id: `paste-${manual.length}-${Date.now()}`,
                 nick: m[1]!.trim(),
                 power: Math.round(power),
+                squad: [],
               })
             }
           }
@@ -64,6 +65,7 @@ export function RosterUpload({ title, allianceTag, players, onChange }: Props) {
             id: `paste-${manual.length}-${Date.now()}`,
             nick,
             power: Math.round(power),
+            squad: [],
           })
         }
       }

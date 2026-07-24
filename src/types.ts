@@ -15,10 +15,15 @@ export const FACING_LANE: Record<LaneId, LaneId> = {
   right: 'left',
 }
 
+/** Цвет/фракция героя: синие (танк), красные (ракета), зелёные (авиа) */
+export type HeroColor = 'blue' | 'red' | 'green'
+
 export interface Player {
   id: string
   nick: string
   power: number
+  /** До 5 цветов героев в составе. Пусто = цвет неизвестен. */
+  squad: HeroColor[]
 }
 
 export type LaneAssignment = Record<LaneId, Player[]>
@@ -38,15 +43,17 @@ export type StrategyId = 'balance' | 'twoStrong' | 'maximizeFlags'
 export const STRATEGY_META: Record<StrategyId, { title: string; description: string }> = {
   balance: {
     title: 'Баланс',
-    description: 'Равномерно распределяет мощь по трём линиям.',
+    description: 'Равномерно распределяет мощь по трём линиям (без жертвы).',
   },
   twoStrong: {
-    title: '2 сильные + жертва',
-    description: 'Усиливает две линии, третью оставляет слабой.',
+    title: '2 сильные + 1 слабая',
+    description:
+      'Всегда две сильные линии и одна жертва напротив самой опасной линии врага. Учитывает мощь, цвета героев и моно-бонус 5/5.',
   },
   maximizeFlags: {
-    title: 'Максимум флагов',
-    description: 'Ищет расстановку с лучшим прогнозом по флагам (с учётом зеркала линий).',
+    title: 'Максимум флагов (2+1)',
+    description:
+      'Перебирает варианты «2 сильные + жертва» с учётом цветов и выбирает лучший прогноз по флагам.',
   },
 }
 
@@ -57,6 +64,8 @@ export interface FightLogEntry {
   oursPower: number
   theirsNick: string
   theirsPower: number
+  oursEffective: number
+  theirsEffective: number
   winner: 'us' | 'them'
   residual: number
 }

@@ -7,8 +7,9 @@ import {
   topFighters,
   turnOrderNumber,
 } from '../lib/simulate'
-import type { LaneAssignment, LaneId, Player } from '../types'
+import type { HeroColor, LaneAssignment, LaneId, Player } from '../types'
 import { LANE_IDS, LANE_LABELS } from '../types'
+import { squadToShort } from '../lib/colors'
 
 interface Props {
   name: string
@@ -77,6 +78,13 @@ export function AlliancePanel({
     onChange({
       ...lanes,
       [l]: lanes[l].map((p) => (p.id === id ? { ...p, power: nextPower } : p)),
+    })
+  }
+
+  function updateSquad(l: LaneId, id: string, squad: HeroColor[]) {
+    onChange({
+      ...lanes,
+      [l]: lanes[l].map((p) => (p.id === id ? { ...p, squad } : p)),
     })
   }
 
@@ -183,6 +191,7 @@ export function AlliancePanel({
             onClear={() => onChange({ ...lanes, [l]: [] })}
             onRemove={(id) => removePlayer(l, id)}
             onEditPower={(id, pow) => updatePower(l, id, pow)}
+            onEditSquad={(id, squad) => updateSquad(l, id, squad)}
             onMoveTo={(id, to) => movePlayer(id, l, to)}
             onSwapWith={(other) => swapLanes(l, other)}
           />
@@ -200,6 +209,7 @@ function LaneEditor({
   onClear,
   onRemove,
   onEditPower,
+  onEditSquad,
   onMoveTo,
   onSwapWith,
 }: {
@@ -210,6 +220,7 @@ function LaneEditor({
   onClear: () => void
   onRemove: (id: string) => void
   onEditPower: (id: string, power: number) => void
+  onEditSquad: (id: string, squad: HeroColor[]) => void
   onMoveTo: (id: string, to: LaneId) => void
   onSwapWith: (other: LaneId) => void
 }) {
@@ -218,6 +229,14 @@ function LaneEditor({
   const fightingIds = new Set(fighters.map((p) => p.id))
   const overflow = players.length > maxFight
   const others = LANE_IDS.filter((x) => x !== lane)
+
+  function squadSelectValue(p: Player): string {
+    if (p.squad.length === 5 && p.squad.every((c) => c === p.squad[0])) {
+      return p.squad[0]!
+    }
+    if (p.squad.length === 0) return ''
+    return 'mixed'
+  }
 
   return (
     <div
@@ -276,6 +295,30 @@ function LaneEditor({
                 {inFight ? turnOrderNumber(idx, fighters.length) : '—'}
               </span>
               <span className="nick">{p.nick}</span>
+              <span className="squad-badge" title="Цвета героев">
+                {squadToShort(p.squad)}
+              </span>
+              <select
+                className="color-move"
+                value={squadSelectValue(p)}
+                title="Моно-цвет состава (5/5)"
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === 'blue' || v === 'red' || v === 'green') {
+                    onEditSquad(p.id, [v, v, v, v, v])
+                  } else if (v === '') {
+                    onEditSquad(p.id, [])
+                  }
+                }}
+              >
+                <option value="">?</option>
+                <option value="blue">С×5</option>
+                <option value="red">К×5</option>
+                <option value="green">З×5</option>
+                <option value="mixed" disabled>
+                  микс
+                </option>
+              </select>
               <input
                 className="power-input"
                 type="text"

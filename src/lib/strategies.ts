@@ -1,12 +1,20 @@
 import type {
   BattleSettings,
+  HeroColor,
   LaneAssignment,
   LaneId,
   Player,
   StrategyId,
 } from '../types'
 import { FACING_LANE, LANE_IDS } from '../types'
-import { emptyLanes, lanePower, simulateMatch } from './simulate'
+import {
+  counterColor,
+  dominantColor,
+  effectiveVsLane,
+  laneEffectiveThreat,
+  normalizeSquad,
+} from './colors'
+import { emptyLanes, lanePower, laneThreat, simulateMatch } from './simulate'
 
 function byPowerDesc(a: Player, b: Player): number {
   return b.power - a.power
@@ -30,11 +38,6 @@ function cloneLanes(a: LaneAssignment): LaneAssignment {
     center: [...a.center],
     right: [...a.right],
   }
-}
-
-/** Линия врага, которая стоит напротив нашей */
-function enemyFacingOur(ourLane: LaneId, enemy: LaneAssignment): Player[] {
-  return enemy[FACING_LANE[ourLane]] ?? []
 }
 
 function takeRoundRobin(players: Player[], maxPerLane: number): LaneAssignment {
@@ -68,177 +71,115 @@ function strategyBalance(players: Player[], settings: BattleSettings): LaneAssig
   return takeRoundRobin(players, settings.maxPerLane)
 }
 
-/** Жертва — наша линия напротив самой сильной линии врага */
+function enemyFacingOur(ourLane: LaneId, enemy: LaneAssignment): Player[] {
+  return enemy[FACING_LANE[ourLane]] ?? []
+}
+
+function enemyLaneThreat(enemy: LaneAssignment, enemyLane: LaneId): number {
+  return laneThreat(enemy[enemyLane] ?? [])
+}
+
+function playerFitsCounter(p: Player, want: HeroColor | null): number {
+  if (!want) return 0
+  const dom = dominantColor(normalizeSquad(p.squad))
+  if (dom === want) return 2
+  const squad = normalizeSquad(p.squad)
+  const hits = squad.filter((c) => c === want).length
+  return hits > 0 ? 1 : 0
+}
+
+/**
+ * Всегда 2 сильные + 1 слабая.
+ * Жертва — напротив самой опасной линии врага (мощь × моно).
+ * На сильные линии优先руем игроков, чей цвет контрит доминирующий цвет врага напротив.
+ */
 function strategyTwoStrong(
   players: Player[],
   enemy: LaneAssignment,
   settings: BattleSettings,
+  forcedSacrifice?: LaneId,
 ): LaneAssignment {
-  const enemySums = LANE_IDS.map((enemyLane) => ({
+  const max = settings.maxPerLane
+  const enemyRanks = LANE_IDS.map((enemyLane) => ({
     enemyLane,
     ourLane: LANE_IDS.find((l) => FACING_LANE[l] === enemyLane) ?? 'center',
-    s: lanePower(enemy[enemyLane]),
-  }))
-  enemySums.sort((a, b) => b.s - a.s)
-  const sacrifice: LaneId =
-    enemySums[0]!.s > 0 ? enemySums[0]!.ourLane : 'right'
-  const strong = LANE_IDS.filter((l) => l !== sacrifice)
+    threat: enemyLaneThreat(enemy, enemyLane),
+  })).sort((a, b) => b.threat - a.threat)
 
-  const sorted = [...players].sort(byPowerAsc)
+  const sacrifice: LaneId =
+    forcedSacrifice ??
+    (enemyRanks[0]!.threat > 0 ? enemyRanks[0]!.ourLane : 'right')
+  const strong = LANE_IDS.filter((l) => l !== sacrifice) as [LaneId, LaneId]
+
+  const counters: Record<LaneId, HeroColor | null> = {
+    left: counterColor(dominantColor(enemyFacingOur('left', enemy).flatMap((p) => p.squad))),
+    center: counterColor(
+      dominantColor(enemyFacingOur('center', enemy).flatMap((p) => p.squad)),
+    ),
+    right: counterColor(dominantColor(enemyFacingOur('right', enemy).flatMap((p) => p.squad))),
+  }
+  // dominant of flattened heroes on facing lane
+  for (const our of LANE_IDS) {
+    const foes = enemyFacingOur(our, enemy)
+    const allColors = foes.flatMap((p) => normalizeSquad(p.squad))
+    counters[our] = counterColor(dominantColor(allColors))
+  }
+
+  const sortedAsc = [...players].sort(byPowerAsc)
   const sacrificeCount = Math.max(
     1,
-    Math.min(settings.maxPerLane, Math.floor(players.length / 5) || 1),
+    Math.min(max, Math.floor(players.length / 5) || 1),
   )
   const out = emptyLanes()
-  const weakPool = sorted.slice(0, sacrificeCount)
-  const strongPool = sorted.slice(sacrificeCount).reverse()
+  const weakPool = sortedAsc.slice(0, sacrificeCount)
+  let strongPool = sortedAsc.slice(sacrificeCount).reverse()
 
   for (const p of weakPool) {
-    if (out[sacrifice].length < settings.maxPerLane) out[sacrifice].push(p)
+    if (out[sacrifice].length < max) out[sacrifice].push(p)
     else strongPool.push(p)
   }
 
-  let i = 0
+  // Раздаём сильных: сначала кто лучше контрит линию с большим дефицитом
+  strongPool = [...strongPool].sort((a, b) => {
+    const score = (p: Player) => {
+      let best = -Infinity
+      for (const lane of strong) {
+        if (out[lane].length >= max) continue
+        const foes = enemyFacingOur(lane, enemy)
+        const fit = playerFitsCounter(p, counters[lane])
+        const eff = effectiveVsLane(p, foes)
+        best = Math.max(best, eff + fit * 2_000_000)
+      }
+      return best
+    }
+    return score(b) - score(a)
+  })
+
   for (const p of strongPool) {
-    const lane = strong[i % strong.length]!
-    if (out[lane].length < settings.maxPerLane) out[lane].push(p)
-    else {
-      const other =
-        strong.find((l) => out[l].length < settings.maxPerLane) ?? sacrifice
-      out[other].push(p)
-    }
-    i += 1
-  }
-  return sortLanes(out)
-}
-
-
-/**
- * Жадно закрывает цели по мощи: сначала самую опасную линию врага,
- * потом остальные (с небольшим запасом).
- */
-function strategyCoverTargets(
-  players: Player[],
-  enemy: LaneAssignment,
-  settings: BattleSettings,
-  priority: 'dangerFirst' | 'weakFirst',
-): LaneAssignment {
-  const max = settings.maxPerLane
-  const sorted = [...players].sort(byPowerDesc)
-  const targets = LANE_IDS.map((ourLane) => ({
-    ourLane,
-    need: lanePower(enemyFacingOur(ourLane, enemy)),
-  }))
-  targets.sort((a, b) =>
-    priority === 'dangerFirst' ? b.need - a.need : a.need - b.need,
-  )
-
-  const out = emptyLanes()
-  let idx = 0
-
-  for (const t of targets) {
-    const surplus = Math.max(500_000, Math.floor(t.need * 0.01))
-    const goal = t.need + surplus
-    while (
-      idx < sorted.length &&
-      out[t.ourLane].length < max &&
-      (lanePower(out[t.ourLane]) < goal || out[t.ourLane].length < 8)
-    ) {
-      out[t.ourLane].push(sorted[idx]!)
-      idx += 1
-    }
-  }
-
-  while (idx < sorted.length) {
-    let best: LaneId | null = null
-    let bestGap = -Infinity
-    for (const lane of LANE_IDS) {
+    let bestLane: LaneId | null = null
+    let bestScore = -Infinity
+    for (const lane of strong) {
       if (out[lane].length >= max) continue
-      const need = lanePower(enemyFacingOur(lane, enemy))
-      const gap = need - lanePower(out[lane])
-      if (gap > bestGap) {
-        bestGap = gap
-        best = lane
+      const foes = enemyFacingOur(lane, enemy)
+      const fit = playerFitsCounter(p, counters[lane])
+      const eff = effectiveVsLane(p, foes)
+      // предпочитаем недозаполненную / слабее набранную линию
+      const fillPenalty = out[lane].length * 50_000
+      const need = laneEffectiveThreat(foes) - laneThreat(out[lane])
+      const sc = eff + fit * 3_000_000 + need * 0.15 - fillPenalty
+      if (sc > bestScore) {
+        bestScore = sc
+        bestLane = lane
       }
     }
-    if (!best) {
-      best = LANE_IDS.reduce((a, b) =>
-        out[a].length <= out[b].length ? a : b,
-      )
+    if (!bestLane) {
+      bestLane =
+        strong.find((l) => out[l].length < max) ??
+        (out[sacrifice].length < max ? sacrifice : strong[0]!)
     }
-    out[best].push(sorted[idx]!)
-    idx += 1
+    out[bestLane].push(p)
   }
 
-  return sortLanes(out)
-}
-
-/** Разрез по силе: N самых сильных на указанную линию, далее по приоритету */
-function stackSplit(
-  players: Player[],
-  order: LaneId[],
-  counts: [number, number, number],
-  maxPerLane: number,
-): LaneAssignment {
-  const sorted = [...players].sort(byPowerDesc)
-  const out = emptyLanes()
-  let idx = 0
-  for (let i = 0; i < 3; i++) {
-    const lane = order[i]!
-    const n = Math.min(counts[i]!, maxPerLane, sorted.length - idx)
-    out[lane] = sorted.slice(idx, idx + n)
-    idx += n
-  }
-  while (idx < sorted.length) {
-    const lane = order.reduce((a, b) =>
-      out[a].length <= out[b].length ? a : b,
-    )
-    if (out[lane].length >= maxPerLane) break
-    out[lane].push(sorted[idx]!)
-    idx += 1
-  }
-  return sortLanes(out)
-}
-
-function mulberry32(seed: number): () => number {
-  let s = seed >>> 0
-  return () => {
-    s = (Math.imul(1664525, s) + 1013904223) >>> 0
-    return s / 0x100000000
-  }
-}
-
-function randomPartition(
-  players: Player[],
-  maxPerLane: number,
-  rand: () => number,
-): LaneAssignment {
-  const shuffled = [...players]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!]
-  }
-  const out = emptyLanes()
-  let i = 0
-  for (const p of shuffled) {
-    // round-robin with capacity
-    let placed = false
-    for (let k = 0; k < 3; k++) {
-      const lane = LANE_IDS[(i + k) % 3]!
-      if (out[lane].length < maxPerLane) {
-        out[lane].push(p)
-        placed = true
-        break
-      }
-    }
-    if (!placed) {
-      const lane = LANE_IDS.reduce((a, b) =>
-        out[a].length <= out[b].length ? a : b,
-      )
-      out[lane].push(p)
-    }
-    i += 1
-  }
   return sortLanes(out)
 }
 
@@ -252,7 +193,6 @@ function scoreAssignment(
   for (const lane of LANE_IDS) {
     margin += sim.lanes[lane].ourSurvivors - sim.lanes[lane].theirSurvivors
   }
-  // 3:0 важнее всего; штраф за флаги врага сильнее
   return (
     sim.ourFlags * 10_000 -
     sim.theirFlags * 4_000 +
@@ -261,43 +201,34 @@ function scoreAssignment(
   )
 }
 
-function consider(
-  candidate: LaneAssignment,
+/**
+ * Максимум флагов только среди вариантов «2 сильные + жертва»
+ * (разные линии жертвы + лёгкий hill-climb свапами).
+ */
+function strategyMaximizeFlags(
+  players: Player[],
   enemy: LaneAssignment,
   settings: BattleSettings,
-  best: { assign: LaneAssignment; score: number },
-): boolean {
-  const sorted = sortLanes(candidate)
-  const sc = scoreAssignment(sorted, enemy, settings)
-  if (sc > best.score) {
-    best.assign = sorted
-    best.score = sc
-    return true
+): LaneAssignment {
+  const best = {
+    assign: strategyTwoStrong(players, enemy, settings),
+    score: -Infinity,
   }
-  return false
-}
+  best.score = scoreAssignment(best.assign, enemy, settings)
 
-function isPerfect(score: number): boolean {
-  // ourFlags=3, their=0 → минимум 30000+50000
-  return score >= 80_000
-}
-
-function hillClimbSwaps(
-  start: LaneAssignment,
-  enemy: LaneAssignment,
-  settings: BattleSettings,
-  best: { assign: LaneAssignment; score: number },
-  maxIter = 80,
-): void {
-  let cur = cloneLanes(start)
-  let curScore = scoreAssignment(cur, enemy, settings)
-  if (curScore > best.score) {
-    best.assign = sortLanes(cur)
-    best.score = curScore
+  for (const sac of LANE_IDS) {
+    const cand = strategyTwoStrong(players, enemy, settings, sac)
+    const sc = scoreAssignment(cand, enemy, settings)
+    if (sc > best.score) {
+      best.assign = cand
+      best.score = sc
+    }
   }
 
-  for (let iter = 0; iter < maxIter; iter++) {
-    if (isPerfect(best.score)) return
+  // локальные свапы между сильными и жертвой
+  let cur = cloneLanes(best.assign)
+  let curScore = best.score
+  for (let iter = 0; iter < 40; iter++) {
     let improved = false
     for (let a = 0; a < LANE_IDS.length; a++) {
       for (let b = a + 1; b < LANE_IDS.length; b++) {
@@ -310,6 +241,10 @@ function hillClimbSwaps(
             next[la][i] = next[lb][j]!
             next[lb][j] = tmp
             const sorted = sortLanes(next)
+            // сохраняем паттерн 2+1: одна линия заметно слабее
+            const threats = LANE_IDS.map((l) => laneThreat(sorted[l]))
+            const sortedThreats = [...threats].sort((x, y) => x - y)
+            if (sortedThreats[0]! * 1.35 > sortedThreats[1]!) continue
             const sc = scoreAssignment(sorted, enemy, settings)
             if (sc > curScore) {
               cur = sorted
@@ -319,104 +254,14 @@ function hillClimbSwaps(
                 best.assign = sorted
                 best.score = sc
               }
-              if (isPerfect(best.score)) return
             }
-          }
-        }
-      }
-    }
-    // одиночные переносы (если есть место)
-    for (const from of LANE_IDS) {
-      for (const to of LANE_IDS) {
-        if (from === to) continue
-        if (cur[to].length >= settings.maxPerLane) continue
-        for (let i = 0; i < cur[from].length; i++) {
-          const next = cloneLanes(cur)
-          const [moved] = next[from].splice(i, 1)
-          if (!moved) continue
-          next[to].push(moved)
-          const sorted = sortLanes(next)
-          const sc = scoreAssignment(sorted, enemy, settings)
-          if (sc > curScore) {
-            cur = sorted
-            curScore = sc
-            improved = true
-            if (sc > best.score) {
-              best.assign = sorted
-              best.score = sc
-            }
-            if (isPerfect(best.score)) return
           }
         }
       }
     }
     if (!improved) break
   }
-}
 
-function strategyMaximizeFlags(
-  players: Player[],
-  enemy: LaneAssignment,
-  settings: BattleSettings,
-): LaneAssignment {
-  const max = settings.maxPerLane
-  const best = {
-    assign: strategyBalance(players, settings),
-    score: -Infinity,
-  }
-  best.score = scoreAssignment(best.assign, enemy, settings)
-
-  const seeds: LaneAssignment[] = [
-    strategyBalance(players, settings),
-    strategyTwoStrong(players, enemy, settings),
-    strategyCoverTargets(players, enemy, settings, 'dangerFirst'),
-    strategyCoverTargets(players, enemy, settings, 'weakFirst'),
-  ]
-
-  // стек сильнейших против самой жирной линии врага (наше право ↔ их лево)
-  for (const nRight of [15, 14, 13, 12, 11, 10]) {
-    for (const nCenter of [15, 14, 13, 12, 11, 10]) {
-      const nLeft = players.length - nRight - nCenter
-      if (nLeft < 1 || nLeft > max) continue
-      seeds.push(
-        stackSplit(players, ['right', 'center', 'left'], [nRight, nCenter, nLeft], max),
-      )
-      seeds.push(
-        stackSplit(players, ['right', 'left', 'center'], [nRight, nLeft, nCenter], max),
-      )
-      seeds.push(
-        stackSplit(players, ['left', 'center', 'right'], [nLeft, nCenter, nRight], max),
-      )
-    }
-  }
-
-  for (const seed of seeds) {
-    consider(seed, enemy, settings, best)
-    if (isPerfect(best.score)) return best.assign
-  }
-
-  // hill-climb с лучших сидов
-  const topSeeds = [...seeds]
-    .map((s) => ({ s, sc: scoreAssignment(s, enemy, settings) }))
-    .sort((a, b) => b.sc - a.sc)
-    .slice(0, 8)
-  for (const { s } of topSeeds) {
-    hillClimbSwaps(s, enemy, settings, best, 60)
-    if (isPerfect(best.score)) return best.assign
-  }
-
-  // случайные перезапуски — на демо 3:0 редкий, но находится
-  const randomTries = Math.min(6_000, Math.max(1_500, players.length * 80))
-  const rand = mulberry32(0xc4a701 ^ (players.length * 9973))
-  for (let t = 0; t < randomTries; t++) {
-    const part = randomPartition(players, max, rand)
-    if (consider(part, enemy, settings, best)) {
-      hillClimbSwaps(part, enemy, settings, best, 25)
-    }
-    if (isPerfect(best.score)) return best.assign
-  }
-
-  hillClimbSwaps(best.assign, enemy, settings, best, 100)
   return best.assign
 }
 
@@ -435,6 +280,6 @@ export function applyStrategy(
     case 'maximizeFlags':
       return strategyMaximizeFlags(players, enemy, settings)
     default:
-      return strategyBalance(players, settings)
+      return strategyTwoStrong(players, enemy, settings)
   }
 }

@@ -1,13 +1,23 @@
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
-import type { LaneId, Player } from '../types'
+import type { HeroColor, LaneId, Player } from '../types'
 import { LANE_IDS } from '../types'
+import { parseSquadColors } from './colors'
 
 let idCounter = 0
 
-export function createPlayer(nick: string, power: number): Player {
+export function createPlayer(
+  nick: string,
+  power: number,
+  squad: HeroColor[] = [],
+): Player {
   idCounter += 1
-  return { id: `p-${idCounter}-${Date.now()}`, nick: nick.trim(), power }
+  return {
+    id: `p-${idCounter}-${Date.now()}`,
+    nick: nick.trim(),
+    power,
+    squad: squad.slice(0, 5),
+  }
 }
 
 export function resetPlayerIds(): void {
@@ -74,13 +84,32 @@ function pickLane(row: Record<string, string>): LaneId | null {
   return null
 }
 
+function pickColors(row: Record<string, string>): HeroColor[] {
+  const keys = Object.keys(row)
+  const colorKey = keys.find((k) => {
+    const n = normalizeHeader(k)
+    return (
+      n === 'colors' ||
+      n === 'color' ||
+      n === 'цвета' ||
+      n === 'цвет' ||
+      n === 'squad' ||
+      n === 'состав' ||
+      n === 'heroes' ||
+      n === 'фракция'
+    )
+  })
+  if (!colorKey) return []
+  return parseSquadColors(row[colorKey])
+}
+
 export function parseRowsToPlayers(rows: Record<string, string>[]): Player[] {
   const players: Player[] = []
   for (const row of rows) {
     const nick = pickNick(row)
     const power = pickPower(row)
     if (!nick || power == null || power <= 0) continue
-    players.push(createPlayer(nick, Math.round(power)))
+    players.push(createPlayer(nick, Math.round(power), pickColors(row)))
   }
   return players
 }
@@ -149,9 +178,9 @@ export async function parseOpponentFile(
     if (!nick || power == null || power <= 0) continue
     if (lane) {
       hasLaneCol = true
-      byLane[lane].push(createPlayer(nick, Math.round(power)))
+      byLane[lane].push(createPlayer(nick, Math.round(power), pickColors(row)))
     } else {
-      byLane.left.push(createPlayer(nick, Math.round(power)))
+      byLane.left.push(createPlayer(nick, Math.round(power), pickColors(row)))
     }
   }
 
@@ -169,19 +198,31 @@ export function playersToCsv(players: Player[], includeLane = false, lane?: Lane
         nick: p.nick,
         power: p.power,
         lane: lane ?? '',
+        colors: p.squad.join(',') || '',
       })),
     )
   }
-  return Papa.unparse(players.map((p) => ({ nick: p.nick, power: p.power })))
+  return Papa.unparse(
+    players.map((p) => ({
+      nick: p.nick,
+      power: p.power,
+      colors: p.squad.join(',') || '',
+    })),
+  )
 }
 
 export function assignmentToCsv(
   assignment: Record<LaneId, Player[]>,
 ): string {
-  const rows: { nick: string; power: number; lane: string }[] = []
+  const rows: { nick: string; power: number; lane: string; colors: string }[] = []
   for (const lane of LANE_IDS) {
     for (const p of assignment[lane]) {
-      rows.push({ nick: p.nick, power: p.power, lane })
+      rows.push({
+        nick: p.nick,
+        power: p.power,
+        lane,
+        colors: p.squad.join(',') || '',
+      })
     }
   }
   return Papa.unparse(rows)

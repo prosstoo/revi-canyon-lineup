@@ -7,12 +7,14 @@ import type {
   Player,
 } from '../types'
 import { FACING_LANE, LANE_IDS } from '../types'
+import { effectivePower, monoMultiplier, normalizeSquad } from './colors'
 
 interface Fighter {
   nick: string
   power: number
   remaining: number
   battlesLeft: number
+  player: Player
 }
 
 function toFighters(players: Player[], maxBattles: number): Fighter[] {
@@ -23,6 +25,7 @@ function toFighters(players: Player[], maxBattles: number): Fighter[] {
       power: p.power,
       remaining: p.power,
       battlesLeft: maxBattles,
+      player: p,
     }))
 }
 
@@ -36,8 +39,18 @@ function countSurvivors(queue: Fighter[], startIndex: number): number {
 }
 
 /**
+ * Эффективный остаток с учётом цветов:
+ * remaining * (effective(full)/power) ≈ remaining * mono * matchup.
+ */
+function effectiveRemaining(f: Fighter, foe: Fighter): number {
+  if (f.power <= 0) return 0
+  const fullEff = effectivePower(f.player, foe.player)
+  return Math.max(0, Math.round((f.remaining / f.power) * fullEff))
+}
+
+/**
  * Эстафетный бой на одной линии.
- * Бой идёт от слабых к сильным; в списках UI показываем от сильных (N) к слабым (1).
+ * Учитывает мощь, моно-бонус 5/5 и цветовой треугольник (С>К>З>С).
  */
 export function simulateLane(
   lane: LaneId,
@@ -66,10 +79,12 @@ export function simulateLane(
       continue
     }
 
-    const ourEffective = a.remaining
-    const theirEffective = b.remaining
+    const ourEffective = effectiveRemaining(a, b)
+    const theirEffective = effectiveRemaining(b, a)
 
     if (ourEffective === theirEffective) {
+      const ourShown = a.remaining
+      const theirShown = b.remaining
       a.remaining = 0
       b.remaining = 0
       a.battlesLeft -= 1
@@ -78,9 +93,11 @@ export function simulateLane(
         lane,
         facingLane,
         oursNick: a.nick,
-        oursPower: ourEffective,
+        oursPower: ourShown,
         theirsNick: b.nick,
-        theirsPower: theirEffective,
+        theirsPower: theirShown,
+        oursEffective: ourEffective,
+        theirsEffective: theirEffective,
         winner: 'us',
         residual: 0,
       })
@@ -90,8 +107,10 @@ export function simulateLane(
     }
 
     if (ourEffective > theirEffective) {
-      const residual = Math.max(0, ourEffective - theirEffective)
-      a.remaining = residual
+      const residualEff = ourEffective - theirEffective
+      // переводим остаток обратно в «сырую» мощь пропорционально
+      const scale = a.power > 0 ? a.power / Math.max(1, effectivePower(a.player, b.player)) : 1
+      a.remaining = Math.max(0, Math.round(residualEff * scale))
       a.battlesLeft -= 1
       b.remaining = 0
       b.battlesLeft -= 1
@@ -99,17 +118,20 @@ export function simulateLane(
         lane,
         facingLane,
         oursNick: a.nick,
-        oursPower: ourEffective,
+        oursPower: a.power,
         theirsNick: b.nick,
-        theirsPower: theirEffective,
+        theirsPower: b.power,
+        oursEffective: ourEffective,
+        theirsEffective: theirEffective,
         winner: 'us',
-        residual,
+        residual: a.remaining,
       })
       ti += 1
       if (a.remaining <= 0 || a.battlesLeft <= 0) oi += 1
     } else {
-      const residual = Math.max(0, theirEffective - ourEffective)
-      b.remaining = residual
+      const residualEff = theirEffective - ourEffective
+      const scale = b.power > 0 ? b.power / Math.max(1, effectivePower(b.player, a.player)) : 1
+      b.remaining = Math.max(0, Math.round(residualEff * scale))
       b.battlesLeft -= 1
       a.remaining = 0
       a.battlesLeft -= 1
@@ -117,11 +139,13 @@ export function simulateLane(
         lane,
         facingLane,
         oursNick: a.nick,
-        oursPower: ourEffective,
+        oursPower: a.power,
         theirsNick: b.nick,
-        theirsPower: theirEffective,
+        theirsPower: b.power,
+        oursEffective: ourEffective,
+        theirsEffective: theirEffective,
         winner: 'them',
-        residual,
+        residual: b.remaining,
       })
       oi += 1
       if (b.remaining <= 0 || b.battlesLeft <= 0) ti += 1
@@ -147,9 +171,6 @@ export function simulateLane(
   return { lane, facingLane, winner, ourSurvivors, theirSurvivors, fights }
 }
 
-/** Наша левая бьётся с их правой, наша правая — с их левой, центр — с центром.
- *  На каждой линии в бой идут только maxPerLane самых сильных.
- */
 export function simulateMatch(
   ours: Record<LaneId, Player[]>,
   theirs: Record<LaneId, Player[]>,
@@ -187,11 +208,18 @@ export function lanePower(players: Player[]): number {
   return players.reduce((s, p) => s + p.power, 0)
 }
 
+/** Мощь линии с моно-бонусом (без учёта матчапа — для оценки угрозы). */
+export function laneThreat(players: Player[]): number {
+  return players.reduce(
+    (s, p) => s + Math.round(p.power * monoMultiplier(normalizeSquad(p.squad))),
+    0,
+  )
+}
+
 export function emptyLanes(): Record<LaneId, Player[]> {
   return { left: [], center: [], right: [] }
 }
 
-/** Топ-N по мощи на линии (в бой) */
 export function topFighters(players: Player[], maxPerLane: number): Player[] {
   return [...players].sort((a, b) => b.power - a.power).slice(0, maxPerLane)
 }
@@ -211,7 +239,6 @@ export function flatPlayers(lanes: Record<LaneId, Player[]>): Player[] {
   return [...(lanes.left ?? []), ...(lanes.center ?? []), ...(lanes.right ?? [])]
 }
 
-/** Сортировка для списков: сильные сверху, номер хода N…1 */
 export function sortForDisplay(players: Player[]): Player[] {
   return [...players].sort((a, b) => b.power - a.power)
 }

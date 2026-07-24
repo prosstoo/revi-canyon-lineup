@@ -554,12 +554,31 @@ textarea {
 
 .lane-editor li {
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) minmax(5.5rem, 7rem) 2.2rem auto;
-  gap: 0.3rem;
+  grid-template-columns: 2rem minmax(0, 1fr) 2.6rem 3.2rem minmax(5rem, 6.5rem) 2.2rem auto;
+  gap: 0.25rem;
   align-items: center;
   padding: 0.28rem 0;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   font-size: 0.82rem;
+}
+
+.squad-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.color-move {
+  padding: 0.1rem;
+  font-size: 0.68rem;
+  max-width: 3.2rem;
+}
+
+.col-eff {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .lane-editor li.is-bench {
@@ -1183,7 +1202,7 @@ th {
   font-weight: 700;
 }
 
-.row-lose td:nth-child(4) {
+.row-lose td:nth-child(5) {
   color: var(--enemy-bright);
   font-weight: 600;
 }

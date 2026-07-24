@@ -64,7 +64,7 @@ export default function App() {
   const [revi, setRevi] = useState<LaneAssignment>(emptyLanes)
   const [enemy, setEnemy] = useState<LaneAssignment>(() => makeBdsmEnemy())
   const [assignment, setAssignment] = useState<LaneAssignment>(emptyLanes)
-  const [strategy, setStrategy] = useState<StrategyId>('maximizeFlags')
+  const [strategy, setStrategy] = useState<StrategyId>('twoStrong')
   const [settings] = useState<BattleSettings>(DEFAULT_SETTINGS)
   const [resultBefore, setResultBefore] = useState<MatchSimResult | null>(null)
   const [result, setResult] = useState<MatchSimResult | null>(null)
@@ -201,7 +201,7 @@ export default function App() {
     setHasCalculated(false)
     setNoPerfectNote(null)
     setDemoNote(DEMO_NOTE)
-    setStrategy('maximizeFlags')
+    setStrategy('twoStrong')
   }
 
   useEffect(() => {
@@ -313,6 +313,10 @@ export default function App() {
                   </li>
                   <li>В бой на линии — до 15 самых сильных (можно загрузить больше).</li>
                   <li>Эстафета: слабые → сильные, победитель идёт с остатком мощи.</li>
+                  <li>
+                    Цвета героев: синие (танк) &gt; красные (ракета) &gt; зелёные (авиа) &gt; синие.
+                    5 героев одного цвета — бонус к урону. Зелёные сильнее бьют по синим.
+                  </li>
                 </ul>
               </div>
             )}
@@ -368,13 +372,18 @@ export default function App() {
             </button>
             {formatOpen && (
               <div className="rules-body">
-                <pre className="code-block">{`nick,power,lane
-PlayerOne,18500000,left
-PlayerTwo,16200000,center
-PlayerThree,15000000,right`}</pre>
+                <pre className="code-block">{`nick,power,lane,colors
+PlayerOne,18500000,left,BBBBB
+PlayerTwo,16200000,center,green
+PlayerThree,15000000,right,red,blue,red,red,red`}</pre>
                 <ul>
                   <li>
                     <code>lane</code>: left / center / right (или лево / центр / право)
+                  </li>
+                  <li>
+                    <code>colors</code>: цвета 5 героев — <code>BBBBB</code>, <code>green</code>{' '}
+                    (моно), или <code>blue,red,...</code>. С=танк, К=ракета, З=авиа. Треугольник:
+                    С&gt;К&gt;З&gt;С. Моно 5/5 даёт бонус к урону.
                   </li>
                   <li>Без lane — всё на левую, потом перенесите.</li>
                   <li>Больше 15 на линию можно: в бой идут топ-15.</li>
