@@ -6,7 +6,7 @@ import type { LaneAssignment, LaneId, Player } from '../src/types'
 import { DEFAULT_SETTINGS, FACING_LANE, LANE_IDS, type StrategyId } from '../src/types'
 import { applyStrategy } from '../src/lib/strategies'
 import {
-  makeBdsmEnemy,
+  makeLmbEnemy,
   makeReviCurrentAssignment,
   makeReviRoster,
 } from '../src/lib/sampleData'
@@ -150,7 +150,7 @@ function greedyVsWeakestEnemy(players: Player[], enemy: LaneAssignment): LaneAss
 }
 
 function main() {
-  const enemy = makeBdsmEnemy()
+  const enemy = makeLmbEnemy()
   const roster = makeReviRoster()
   const current = makeReviCurrentAssignment()
 

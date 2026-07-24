@@ -6,8 +6,8 @@ import { StrategyPanel } from './components/StrategyPanel'
 import { assignmentToCsv } from './lib/parseRoster'
 import {
   DEMO_NOTE,
-  makeAsbiEnemy,
-  makeLmbCurrentAssignment,
+  makeLmbEnemy,
+  makeReviCurrentAssignment,
 } from './lib/sampleData'
 import {
   emptyLanes,
@@ -59,10 +59,10 @@ function scrollToId(id: string) {
 }
 
 export default function App() {
-  const [ourName, setOurName] = useState('LMB')
-  const [enemyName, setEnemyName] = useState('ASBI')
+  const [ourName, setOurName] = useState('REVI')
+  const [enemyName, setEnemyName] = useState('LMB')
   const [revi, setRevi] = useState<LaneAssignment>(emptyLanes)
-  const [enemy, setEnemy] = useState<LaneAssignment>(() => makeAsbiEnemy())
+  const [enemy, setEnemy] = useState<LaneAssignment>(() => makeLmbEnemy())
   const [assignment, setAssignment] = useState<LaneAssignment>(emptyLanes)
   const [strategy, setStrategy] = useState<StrategyId>('twoStrong')
   const [settings] = useState<BattleSettings>(DEFAULT_SETTINGS)
@@ -189,12 +189,10 @@ export default function App() {
   }
 
   function loadDemo() {
-    const asbi = makeAsbiEnemy()
-    const lmbNow = makeLmbCurrentAssignment()
-    setOurName('LMB')
-    setEnemyName('ASBI')
-    setEnemy(asbi)
-    setRevi(lmbNow)
+    setOurName('REVI')
+    setEnemyName('LMB')
+    setRevi(makeReviCurrentAssignment())
+    setEnemy(makeLmbEnemy())
     setAssignment(emptyLanes())
     setResult(null)
     setResultBefore(null)
@@ -264,7 +262,7 @@ export default function App() {
         </button>
 
         <button type="button" className="btn btn-primary side-nav-demo" onClick={loadDemo}>
-          Демо
+          Демо REVI vs LMB
         </button>
       </aside>
 
@@ -290,7 +288,7 @@ export default function App() {
           <div className="game-topbar">
             <h1 className="title-cta">Завоевание каньона</h1>
             <button type="button" className="btn btn-primary" onClick={loadDemo}>
-              Демо {ourName} vs {enemyName}
+              Демо REVI vs LMB
             </button>
           </div>
 

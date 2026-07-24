@@ -3,12 +3,12 @@
  */
 import { DEFAULT_SETTINGS } from '../src/types'
 import { applyStrategy } from '../src/lib/strategies'
-import { makeBdsmEnemy, makeReviCurrentAssignment } from '../src/lib/sampleData'
+import { makeLmbEnemy, makeReviCurrentAssignment } from '../src/lib/sampleData'
 import { flatPlayers, lanePower, simulateMatch } from '../src/lib/simulate'
 import { LANE_IDS } from '../src/types'
 
 const t0 = Date.now()
-const enemy = makeBdsmEnemy()
+const enemy = makeLmbEnemy()
 const revi = makeReviCurrentAssignment()
 const pool = flatPlayers(revi)
 const next = applyStrategy('maximizeFlags', pool, enemy, DEFAULT_SETTINGS)

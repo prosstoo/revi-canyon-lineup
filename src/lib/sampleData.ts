@@ -5,6 +5,7 @@ type Row = readonly [string, number, HeroColor[]?]
 
 const MONO_RED: HeroColor[] = ['red', 'red', 'red', 'red', 'red']
 const MONO_BLUE: HeroColor[] = ['blue', 'blue', 'blue', 'blue', 'blue']
+const MONO_GREEN: HeroColor[] = ['green', 'green', 'green', 'green', 'green']
 
 function lane(rows: Row[]): Player[] {
   return rows.map(([nick, power, squad]) => createPlayer(nick, power, squad ?? []))
@@ -29,10 +30,109 @@ function flatten(src: LaneAssignment): Player[] {
 }
 
 /**
- * LMB (#87) — боевые отчёты 24.07 vs ASBI (photo_22–41).
- * Линия = вкладка отчёта (левая↔левая).
+ * REVI (#132) — актуальная расстановка со скринов «Сведения о расстановке»
+ * 24.07 11:02. Топ-15 по порядку ходов + запас на линии.
  */
-export const LMB_CURRENT: LaneAssignment = {
+export const REVI_CURRENT: LaneAssignment = {
+  left: lane([
+    // бой 15→1
+    ['IBlackFlint', 20753024, MONO_BLUE],
+    ['devyy', 20278099, MONO_GREEN],
+    ['BOMBARDIER', 20207802, ['blue', 'red', 'red', 'red', 'red']],
+    ['Аллегрова', 19669686, MONO_GREEN],
+    ['LAMPOCHKA', 19547186, MONO_GREEN],
+    ['Layrouse', 19214805, MONO_BLUE],
+    ['cdpkaktus', 18860653, MONO_RED],
+    ['Maraniil', 18724594, MONO_GREEN],
+    ['---КИС---', 17840010, MONO_BLUE],
+    ['Solevar', 17238314, MONO_RED],
+    ['VaRvArTTT', 16739611, MONO_RED],
+    ['Plytofka', 16242228, MONO_GREEN],
+    ['страх', 15412048, MONO_GREEN],
+    ['炊き込み御飯', 14804836, MONO_BLUE],
+    ['MixturA', 14679489, MONO_GREEN],
+    // запас
+    ['HexaS', 13731526],
+    ['Пирожочек', 12704690],
+    ['Yaa°Blue', 12678817],
+    ['Domino777', 12109435],
+    ['Arphira', 11620843],
+    ['DoctorNins', 11469398],
+    ['★きゃら★', 11414036],
+    ['Lisa-Patrekeevna', 10310801],
+    ['zOOm', 9694549],
+    ['Mielczara', 9626899],
+    ['ЧерТёНоКФкЕдАх', 9033251],
+    ['변기에넣고서내려', 7930006],
+    ['Yulie', 7404669],
+    ['Daenerystargarye', 5862776],
+    ['『Лиса』', 5586521],
+    ['DreamerDoom', 3121915],
+  ]),
+  center: lane([
+    ['◇ZloiPAPA◇', 21718663, MONO_BLUE],
+    ['PR0vokaTOR', 21467061, MONO_BLUE],
+    ['SenjorTomato', 21353445, MONO_BLUE],
+    ['nevyy', 19752086, ['blue', 'red', 'red', 'red', 'red']],
+    ['KKKe', 19482184, MONO_BLUE],
+    ['Tim2', 19173567, MONO_BLUE],
+    ['★BipolarStar★', 18119101, MONO_BLUE],
+    ['DocSirena', 17703074, MONO_BLUE],
+    ['Hitter', 17472698, MONO_RED],
+    ['ДядяВова', 16674497, MONO_BLUE],
+    ['Defa1000', 16588903, MONO_RED],
+    ['KomstoK', 15800632, MONO_BLUE],
+    ['Dze', 15638710, MONO_BLUE],
+    ['TaraKash', 14587000, MONO_BLUE],
+    ['Solnce', 14438575, MONO_BLUE],
+    // запас
+    ['Tusker777', 14164031],
+    ['DziL', 13941066],
+    ['friendWwW', 13715458],
+    ['RamZz', 12786913],
+    ['DzikAlfa', 12757437],
+    ['Lovchaya', 12732160],
+    ['TymkalA', 12315073],
+    ['Marycl3', 11195611],
+    ['SHAKAL', 10687085],
+    ['DrEnchantress132', 10504793],
+    ['brooze', 9462460],
+    ['LeXa-', 8858361],
+    ['BenBlast', 8031124],
+    ['doraa', 7614296],
+    ['아프라', 7398985],
+    ['Puziko', 5576167],
+  ]),
+  right: lane([
+    // 29/15 — топ по порядку ходов со скринов
+    ['Ałejanđrɵ', 16218911, MONO_RED],
+    ['BAGIGR', 15735894, MONO_RED],
+    ['General-Alcohol', 15501675, MONO_RED],
+    ['MasoudEsm', 14974918, MONO_RED],
+    ['IDARQ', 14825494, ['red', 'red', 'blue', 'red', 'red']],
+    ['Hkn', 14761788, MONO_RED],
+    ['VishenkA', 14413235, MONO_RED],
+    ['Лемниската', 14197768, MONO_GREEN],
+    ['《Koschō》', 14157469, MONO_BLUE],
+    ['PolWilliam', 14087553, MONO_RED],
+    ['AtAman', 14031840, MONO_RED],
+    ['madnesss', 13286055, MONO_RED],
+    ['88Алина88', 13175950],
+    ['Casstiell', 12770552],
+    ['YodasTR', 11793404],
+    // запас
+    ['~•Кнопка•~', 11746323],
+    ['AZEeyyub', 11333658],
+    ['•ДoбрАя•МaМкА•', 9612629],
+    ['Napasorn', 8575360],
+    ['BadGirl69', 8464467],
+  ]),
+}
+
+/**
+ * LMB (#87) — противник REVI, составы с боевых отчётов 24.07.
+ */
+export const LMB_OPPONENT: LaneAssignment = {
   left: lane([
     ['stague', 19082930, MONO_RED],
     ['MeLiH', 18762462, ['red', 'red', 'blue', 'red', 'blue']],
@@ -80,86 +180,32 @@ export const LMB_CURRENT: LaneAssignment = {
   ]),
 }
 
-/**
- * ASBI (#122) — противник LMB, те же вкладки отчётов.
- */
-export const ASBI_OPPONENT: LaneAssignment = {
-  left: lane([
-    ['Busgosu', 17896232, MONO_RED],
-    ['☆ Karmen ☆', 17763305, MONO_RED],
-    ['Solvas', 16170167, MONO_RED],
-    ['Firebladerr97', 16049749, MONO_BLUE],
-    ['haposai', 15416542, MONO_RED],
-    ['САЛАМАНДРА', 15206419, MONO_RED],
-    ['Zubr56', 15114759, MONO_BLUE],
-    ['Baiamut', 14629766, MONO_RED],
-    ['Smetan', 14094805, MONO_RED],
-    ['Ебушкиворобушки', 13570260, MONO_RED],
-    ['SallySaffron', 13110981, MONO_BLUE],
-    ['Жене4каааа', 12565495, MONO_RED],
-    ['Zaura04', 12024673, MONO_RED],
-    ['ЗасланнаяP', 11956919, MONO_BLUE],
-    ['VиKtoRиЯ', 11878410, MONO_RED],
-  ]),
-  center: lane([
-    ['LordKreton', 20276489, MONO_BLUE],
-    ['Dejmill', 17860932, MONO_RED],
-    ['Kalesí', 17656435, MONO_RED],
-    ['Spartキツネ', 16326289, MONO_BLUE],
-    ['RemboBezTrysov', 16256490, MONO_RED],
-    ['XxMORTIZxX', 15699025, MONO_RED],
-    ['Люциферрр', 14731401, MONO_BLUE],
-    ['Selene78', 14519038, MONO_RED],
-    ['SkuldGallaecia', 13897210, MONO_RED],
-    ['Mashulya69Rus', 13823626, MONO_BLUE],
-    ['SERIBAN', 13174260, MONO_RED],
-    ['МерлинМонро', 12931251, MONO_RED],
-    ['CRELOR', 12257530, MONO_RED],
-    ['Xhamara', 11951213, MONO_BLUE],
-  ]),
-  right: lane([
-    ['DrQuijote', 20057945, MONO_BLUE],
-    ['Габигаби', 18562592, MONO_RED],
-    ['kukylot', 16837871, MONO_RED],
-    ['Unblooder', 16727270, MONO_BLUE],
-    ['Galahan17', 15857818, MONO_RED],
-    ['QueenShadows', 15721263, MONO_RED],
-    ['samaru', 15580200, MONO_BLUE],
-    ['анестезиолог', 15332440, MONO_RED],
-    ['ELROND', 14643810, MONO_RED],
-    ['MaстерицA', 14335942, MONO_BLUE],
-    ['Vl4dislav', 13941262, MONO_RED],
-    ['MrTuberculo', 13668349, MONO_RED],
-    ['•Bambolina•', 13363721, MONO_BLUE],
-    ['Stas707', 12663327, MONO_RED],
-    ['Swetlana17247', 12243511, MONO_RED],
-  ]),
-}
+/** @deprecated — LMB как «наш» больше не демо-дефолт */
+export const LMB_CURRENT = LMB_OPPONENT
 
-/** @deprecated alias — старое имя, теперь LMB */
-export const REVI_CURRENT = LMB_CURRENT
-/** @deprecated alias — старое имя, теперь ASBI */
-export const BDSM_OPPONENT = ASBI_OPPONENT
-
-export function makeAsbiEnemy(): LaneAssignment {
-  return cloneLanes(ASBI_OPPONENT)
-}
-
-export function makeLmbCurrentAssignment(): LaneAssignment {
-  return cloneLanes(LMB_CURRENT)
-}
-
-export function makeBdsmEnemy(): LaneAssignment {
-  return makeAsbiEnemy()
+export function makeLmbEnemy(): LaneAssignment {
+  return cloneLanes(LMB_OPPONENT)
 }
 
 export function makeReviCurrentAssignment(): LaneAssignment {
-  return makeLmbCurrentAssignment()
+  return cloneLanes(REVI_CURRENT)
+}
+
+export function makeLmbCurrentAssignment(): LaneAssignment {
+  return makeLmbEnemy()
+}
+
+export function makeAsbiEnemy(): LaneAssignment {
+  return makeLmbEnemy()
+}
+
+export function makeBdsmEnemy(): LaneAssignment {
+  return makeLmbEnemy()
 }
 
 export function makeReviRoster(): Player[] {
-  return flatten(LMB_CURRENT)
+  return flatten(REVI_CURRENT)
 }
 
 export const DEMO_NOTE =
-  'Демо 24.07: LMB vs ASBI со скринов боёв. Линии бьются прямо: левая↔левая, центр↔центр, правая↔правая.'
+  'Демо: REVI vs LMB. Мощь REVI — со свежих скринов расстановки; LMB — с боевых отчётов. Линии: левая↔левая, центр↔центр, правая↔правая.'
