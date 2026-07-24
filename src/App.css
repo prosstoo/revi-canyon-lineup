@@ -568,10 +568,18 @@ textarea {
   align-items: center;
   gap: 0.35rem;
   margin: 0 0 0.65rem;
-  padding: 0.4rem 0.5rem;
+  padding: 0.55rem 0.65rem;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface-alt);
+}
+
+.bulk-color-bar__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  margin-right: 0.35rem;
+  min-width: 9.5rem;
 }
 
 .lane-color-bulk {

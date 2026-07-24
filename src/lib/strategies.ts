@@ -91,7 +91,11 @@ function playerFitsCounter(p: Player, want: HeroColor | null): number {
 /**
  * Всегда 2 сильные + 1 слабая.
  * Жертва — напротив самой опасной линии врага (мощь × моно).
- * На сильные линии优先руем игроков, чей цвет контрит доминирующий цвет врага напротив.
+ *
+ * В бой на жертве идут не «дно» ростера, а 3-й эшелон
+ * (места 31–45 при max=15) — топ-15 жертвы остаётся сильным.
+ * Абсолютный запас (ниже топ-45) не ставится в бой.
+ * На сильные линии приоритеем цвет, который контрит врага напротив.
  */
 function strategyTwoStrong(
   players: Player[],
@@ -100,6 +104,7 @@ function strategyTwoStrong(
   forcedSacrifice?: LaneId,
 ): LaneAssignment {
   const max = settings.maxPerLane
+  const strongSlots = max * 2
   const enemyRanks = LANE_IDS.map((enemyLane) => ({
     enemyLane,
     ourLane: LANE_IDS.find((l) => FACING_LANE[l] === enemyLane) ?? 'center',
@@ -112,34 +117,38 @@ function strategyTwoStrong(
   const strong = LANE_IDS.filter((l) => l !== sacrifice) as [LaneId, LaneId]
 
   const counters: Record<LaneId, HeroColor | null> = {
-    left: counterColor(dominantColor(enemyFacingOur('left', enemy).flatMap((p) => p.squad))),
-    center: counterColor(
-      dominantColor(enemyFacingOur('center', enemy).flatMap((p) => p.squad)),
-    ),
-    right: counterColor(dominantColor(enemyFacingOur('right', enemy).flatMap((p) => p.squad))),
+    left: null,
+    center: null,
+    right: null,
   }
-  // dominant of flattened heroes on facing lane
   for (const our of LANE_IDS) {
     const foes = enemyFacingOur(our, enemy)
     const allColors = foes.flatMap((p) => normalizeSquad(p.squad))
     counters[our] = counterColor(dominantColor(allColors))
   }
 
-  const sortedAsc = [...players].sort(byPowerAsc)
-  const sacrificeCount = Math.max(
-    1,
-    Math.min(max, Math.floor(players.length / 5) || 1),
-  )
-  const out = emptyLanes()
-  const weakPool = sortedAsc.slice(0, sacrificeCount)
-  let strongPool = sortedAsc.slice(sacrificeCount).reverse()
+  const sortedDesc = [...players].sort(byPowerDesc)
+  let strongPool: Player[]
+  let sacrificePool: Player[]
+  let bench: Player[]
 
-  for (const p of weakPool) {
-    if (out[sacrifice].length < max) out[sacrifice].push(p)
-    else strongPool.push(p)
+  if (sortedDesc.length <= strongSlots) {
+    const sacCount = Math.min(
+      max,
+      Math.max(1, Math.floor(sortedDesc.length / 3)),
+    )
+    sacrificePool = sortedDesc.slice(sortedDesc.length - sacCount)
+    strongPool = sortedDesc.slice(0, sortedDesc.length - sacCount)
+    bench = []
+  } else {
+    strongPool = sortedDesc.slice(0, strongSlots)
+    sacrificePool = sortedDesc.slice(strongSlots, strongSlots + max)
+    bench = sortedDesc.slice(strongSlots + max)
   }
 
-  // Раздаём сильных: сначала кто лучше контрит линию с большим дефицитом
+  const out = emptyLanes()
+  for (const p of sacrificePool) out[sacrifice].push(p)
+
   strongPool = [...strongPool].sort((a, b) => {
     const score = (p: Player) => {
       let best = -Infinity
@@ -163,7 +172,6 @@ function strategyTwoStrong(
       const foes = enemyFacingOur(lane, enemy)
       const fit = playerFitsCounter(p, counters[lane])
       const eff = effectiveVsLane(p, foes)
-      // предпочитаем недозаполненную / слабее набранную линию
       const fillPenalty = out[lane].length * 50_000
       const need = laneEffectiveThreat(foes) - laneThreat(out[lane])
       const sc = eff + fit * 3_000_000 + need * 0.15 - fillPenalty
@@ -179,6 +187,8 @@ function strategyTwoStrong(
     }
     out[bestLane].push(p)
   }
+
+  for (const p of bench) out[sacrifice].push(p)
 
   return sortLanes(out)
 }
@@ -225,7 +235,6 @@ function strategyMaximizeFlags(
     }
   }
 
-  // локальные свапы между сильными и жертвой
   let cur = cloneLanes(best.assign)
   let curScore = best.score
   for (let iter = 0; iter < 40; iter++) {
@@ -241,7 +250,6 @@ function strategyMaximizeFlags(
             next[la][i] = next[lb][j]!
             next[lb][j] = tmp
             const sorted = sortLanes(next)
-            // сохраняем паттерн 2+1: одна линия заметно слабее
             const threats = LANE_IDS.map((l) => laneThreat(sorted[l]))
             const sortedThreats = [...threats].sort((x, y) => x - y)
             if (sortedThreats[0]! * 1.35 > sortedThreats[1]!) continue

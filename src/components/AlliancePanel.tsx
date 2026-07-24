@@ -178,14 +178,17 @@ export function AlliancePanel({
         )}
       </div>
 
-      <div className="bulk-color-bar" role="group" aria-label="Цвет для всех игроков">
-        <span className="lane-swap-label">Цвет всем</span>
+      <div className="bulk-color-bar" role="group" aria-label="Цвет всех отрядов альянса">
+        <div className="bulk-color-bar__label">
+          <span className="lane-swap-label">Цвет всех отрядов</span>
+          <span className="muted tiny">потом можно поправить отдельных игроков</span>
+        </div>
         <button
           type="button"
           className="btn color-bulk color-bulk--blue"
           disabled={total === 0}
           onClick={() => setAllColors('blue')}
-          title="Всем синие ×5 (танк)"
+          title="Всем отрядам альянса: синие ×5 (танк)"
         >
           С×5
         </button>
@@ -194,7 +197,7 @@ export function AlliancePanel({
           className="btn color-bulk color-bulk--red"
           disabled={total === 0}
           onClick={() => setAllColors('red')}
-          title="Всем красные ×5 (ракета)"
+          title="Всем отрядам альянса: красные ×5 (ракета)"
         >
           К×5
         </button>
@@ -203,7 +206,7 @@ export function AlliancePanel({
           className="btn color-bulk color-bulk--green"
           disabled={total === 0}
           onClick={() => setAllColors('green')}
-          title="Всем зелёные ×5 (авиа)"
+          title="Всем отрядам альянса: зелёные ×5 (авиа)"
         >
           З×5
         </button>
@@ -212,7 +215,7 @@ export function AlliancePanel({
           className="btn btn--ghost color-bulk"
           disabled={total === 0}
           onClick={() => setAllColors(null)}
-          title="Сбросить цвета"
+          title="Сбросить цвета всех отрядов"
         >
           Сброс
         </button>

@@ -98,6 +98,12 @@ export function MatchupLineups({
               Порядок: сильные → слабые.
             </p>
           )}
+          {!collapsible && editable && (
+            <p className="muted small matchup-hint">
+              Стратегия 2+1: жертва — линия с меньшей суммой мощи (обычно напротив кита врага).
+              В её топ-15 идут игроки 3-го эшелона (после двух сильных линий), не дно ростера.
+            </p>
+          )}
           <div className="matchup-scroll">
             <div className="matchup-grid">
               {LANE_IDS.map((ourLane) => {

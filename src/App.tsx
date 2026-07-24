@@ -54,6 +54,29 @@ function updatePowerInLanes(
   return next
 }
 
+/** Переносит цвета отрядов из source в target по id (и нику). */
+function syncSquadsFromSource(
+  target: LaneAssignment,
+  source: LaneAssignment,
+): LaneAssignment {
+  const byId = new Map<string, (typeof source.left)[number]>()
+  const byNick = new Map<string, (typeof source.left)[number]>()
+  for (const lane of LANE_IDS) {
+    for (const p of source[lane]) {
+      byId.set(p.id, p)
+      byNick.set(p.nick, p)
+    }
+  }
+  const next = emptyLanes()
+  for (const lane of LANE_IDS) {
+    next[lane] = target[lane].map((p) => {
+      const src = byId.get(p.id) ?? byNick.get(p.nick)
+      return src ? { ...p, squad: [...src.squad] } : p
+    })
+  }
+  return next
+}
+
 function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
@@ -131,7 +154,9 @@ export default function App() {
   function handleReviChange(next: LaneAssignment) {
     setRevi(next)
     setDemoNote(null)
-    resim(assignment, enemy, next)
+    const nextAssign = syncSquadsFromSource(assignment, next)
+    setAssignment(nextAssign)
+    resim(nextAssign, enemy, next)
   }
 
   function handleEnemyChange(next: LaneAssignment) {
